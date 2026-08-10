@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { Ball } from "../components/Ball";
 import { Generator } from "../components/Generator";
+import { MyTicketCard } from "../components/MyTicket";
 import { SelectionSteps } from "../components/SelectionSteps";
 import { Sheet } from "../components/Sheet";
 import { WindowCard } from "../components/WindowSummary";
@@ -58,6 +59,8 @@ export function HomeScreen({
           </button>
         </div>
       </section>
+
+      <MyTicketCard onToast={onToast} />
 
       <Generator onToast={onToast} />
 

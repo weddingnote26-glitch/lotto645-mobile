@@ -17,19 +17,26 @@ import {
 import { analyze } from "../core/analyzer";
 import { buildLottoData, loadLottoFile, serializeLottoData } from "../core/excelLoader";
 import { selectCoreNumber, type SelectionResult } from "../core/numberSelector";
+import {
+  analyzePatterns,
+  patternBands,
+  type PatternBands,
+  type PatternStats,
+} from "../core/patternAnalyzer";
 import type { Analysis, LottoData } from "../core/types";
 import { DataError } from "../core/validators";
 import { decodeSeedRows, SEED_LATEST_ROUND } from "../data/seedDraws";
 import {
   clearDataset,
   DEFAULT_SETTINGS,
-  loadSavedGames,
+  emptyTicket,
+  loadMyTicket,
   loadSettings,
   loadStoredDataset,
-  persistSavedGames,
+  persistMyTicket,
   saveDataset,
   saveSettings,
-  type SavedGame,
+  type MyTicket,
   type Settings,
 } from "../storage/db";
 
@@ -45,7 +52,12 @@ interface AppStateValue {
   dataSavedAt: string | null;
   warnings: string[];
   settings: Settings;
-  savedGames: SavedGame[];
+  /** 당첨 조합의 형태 패턴 통계 */
+  patterns: PatternStats | null;
+  /** 패턴 기반 생성이 쓰는 기준값 */
+  bands: PatternBands | null;
+  /** 내 번호 A~E 5칸 (비어 있으면 null) */
+  ticket: MyTicket;
   /** 방금 생성한 게임들. 탭을 옮겨도 유지되도록 여기에 둔다. */
   games: number[][];
   gamesMode: string;
@@ -54,9 +66,10 @@ interface AppStateValue {
   /** 사용자가 고른 엑셀로 교체. 성공하면 안내 문구를 반환. */
   updateFromFile: (file: File) => Promise<{ ok: boolean; message: string }>;
   resetToSeed: () => Promise<void>;
-  addSavedGames: (games: number[][], mode: string) => Promise<number>;
-  removeSavedGame: (id: string) => Promise<void>;
-  clearSavedGames: () => Promise<void>;
+  /** 지정한 칸(0~4)에 6개 번호를 저장. 이미 차 있으면 교체된다. */
+  saveToSlot: (index: number, numbers: number[], mode: string) => Promise<void>;
+  clearSlot: (index: number) => Promise<void>;
+  clearTicket: () => Promise<void>;
   dismissWarnings: () => void;
 }
 
@@ -66,10 +79,6 @@ function seedLottoData(): LottoData {
   return buildLottoData(decodeSeedRows(), SEED_SOURCE);
 }
 
-function makeId(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [data, setData] = useState<LottoData | null>(null);
@@ -77,7 +86,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [dataSavedAt, setDataSavedAt] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
-  const [savedGames, setSavedGames] = useState<SavedGame[]>([]);
+  const [ticket, setTicket] = useState<MyTicket>(emptyTicket);
   const [games, setGames] = useState<number[][]>([]);
   const [gamesMode, setGamesMode] = useState("");
 
@@ -85,9 +94,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     let alive = true;
     (async () => {
       setSettings(loadSettings());
-      const [stored, games] = await Promise.all([loadStoredDataset(), loadSavedGames()]);
+      const [stored, savedTicket] = await Promise.all([loadStoredDataset(), loadMyTicket()]);
       if (!alive) return;
-      setSavedGames(games);
+      setTicket(savedTicket);
       if (stored && stored.rows.length > 0) {
         setData(buildLottoData(stored.rows, stored.source));
         setUsingSeed(false);
@@ -108,6 +117,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   // 분석 결과가 바뀔 때만 다시 뽑는다. 규칙이 고정돼 있어 같은 데이터면 같은 번호가 나오고,
   // 완전 동률일 때만 무작위가 개입하므로 화면이 리렌더될 때마다 흔들리지 않도록 고정한다.
   const selection = useMemo(() => (analysis ? selectCoreNumber(analysis) : null), [analysis]);
+
+  // 전체 회차를 훑는 계산이라 데이터가 바뀔 때만 다시 돌린다.
+  const patterns = useMemo(() => (data ? analyzePatterns(data) : null), [data]);
+  const bands = useMemo(() => (patterns ? patternBands(patterns) : null), [patterns]);
 
   const setGeneratedGames = useCallback((next: number[][], mode: string) => {
     setGames(next);
@@ -164,37 +177,36 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setGamesMode("");
   }, []);
 
-  const addSavedGames = useCallback(
-    async (games: number[][], mode: string) => {
-      if (!analysis) return 0;
-      const savedAt = new Date().toISOString();
-      const entries: SavedGame[] = games.map((numbers) => ({
-        id: makeId(),
-        numbers,
+  const saveToSlot = useCallback(
+    async (index: number, numbers: number[], mode: string) => {
+      if (!analysis) return;
+      const next = [...ticket];
+      next[index] = {
+        numbers: [...numbers].sort((a, b) => a - b),
         baseRound: analysis.latest,
         mode,
-        savedAt,
-      }));
-      const next = [...entries, ...savedGames];
-      setSavedGames(next);
-      await persistSavedGames(next);
-      return entries.length;
+        savedAt: new Date().toISOString(),
+      };
+      setTicket(next);
+      await persistMyTicket(next);
     },
-    [analysis, savedGames],
+    [analysis, ticket],
   );
 
-  const removeSavedGame = useCallback(
-    async (id: string) => {
-      const next = savedGames.filter((g) => g.id !== id);
-      setSavedGames(next);
-      await persistSavedGames(next);
+  const clearSlot = useCallback(
+    async (index: number) => {
+      const next = [...ticket];
+      next[index] = null;
+      setTicket(next);
+      await persistMyTicket(next);
     },
-    [savedGames],
+    [ticket],
   );
 
-  const clearSavedGames = useCallback(async () => {
-    setSavedGames([]);
-    await persistSavedGames([]);
+  const clearTicket = useCallback(async () => {
+    const next = emptyTicket();
+    setTicket(next);
+    await persistMyTicket(next);
   }, []);
 
   const dismissWarnings = useCallback(() => setWarnings([]), []);
@@ -208,16 +220,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     dataSavedAt,
     warnings,
     settings,
-    savedGames,
+    patterns,
+    bands,
+    ticket,
     games,
     gamesMode,
     setGeneratedGames,
     updateSettings,
     updateFromFile,
     resetToSeed,
-    addSavedGames,
-    removeSavedGame,
-    clearSavedGames,
+    saveToSlot,
+    clearSlot,
+    clearTicket,
     dismissWarnings,
   };
 

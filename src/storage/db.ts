@@ -20,13 +20,42 @@ export interface StoredDataset {
   count: number;
 }
 
-export interface SavedGame {
-  id: string;
+/** 실제 로또 용지 한 장처럼 A~E 5칸을 쓴다. */
+export const SLOT_LABELS = ["A", "B", "C", "D", "E"] as const;
+export const SLOT_COUNT = SLOT_LABELS.length;
+
+export interface TicketSlot {
   numbers: number[];
+  /** 저장 당시 기준 회차 */
   baseRound: number;
+  /** 어떤 방식으로 뽑은 번호인지 */
   mode: string;
   savedAt: string;
-  memo?: string;
+}
+
+/** 길이 5 고정. 비어 있는 칸은 null. */
+export type MyTicket = Array<TicketSlot | null>;
+
+export function emptyTicket(): MyTicket {
+  return new Array<TicketSlot | null>(SLOT_COUNT).fill(null);
+}
+
+/** 저장된 값이 손상됐거나 길이가 달라도 항상 5칸으로 맞춘다. */
+function normalizeTicket(raw: unknown): MyTicket {
+  const ticket = emptyTicket();
+  if (!Array.isArray(raw)) return ticket;
+  for (let i = 0; i < SLOT_COUNT; i += 1) {
+    const slot = raw[i] as TicketSlot | null | undefined;
+    if (
+      slot &&
+      Array.isArray(slot.numbers) &&
+      slot.numbers.length === 6 &&
+      slot.numbers.every((n) => Number.isInteger(n) && n >= 1 && n <= 45)
+    ) {
+      ticket[i] = slot;
+    }
+  }
+  return ticket;
 }
 
 function openDb(): Promise<IDBDatabase | null> {
@@ -135,21 +164,23 @@ export async function clearDataset(): Promise<void> {
   lsRemove("dataset");
 }
 
-// ---------- 저장한 번호 ----------
+// ---------- 내 번호 (A~E 5칸) ----------
 
-export async function loadSavedGames(): Promise<SavedGame[]> {
-  return (await idbGet<SavedGame[]>("savedGames")) ?? lsGet<SavedGame[]>("savedGames") ?? [];
+export async function loadMyTicket(): Promise<MyTicket> {
+  const raw = (await idbGet<unknown>("myTicket")) ?? lsGet<unknown>("myTicket");
+  return normalizeTicket(raw);
 }
 
-export async function persistSavedGames(games: SavedGame[]): Promise<void> {
-  const ok = await idbSet("savedGames", games);
-  if (!ok) lsSet("savedGames", games);
+export async function persistMyTicket(ticket: MyTicket): Promise<void> {
+  const ok = await idbSet("myTicket", ticket);
+  if (!ok) lsSet("myTicket", ticket);
 }
 
 // ---------- 화면 설정 ----------
 
 export interface Settings {
-  mode: "A" | "B";
+  /** A=완전 랜덤, B=분석 기반 균형, C=패턴 기반 */
+  mode: "A" | "B" | "C";
   includeCore: boolean;
   gameCount: number;
 }

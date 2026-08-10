@@ -4,10 +4,12 @@
 import { useMemo, useState } from "react";
 
 import { Ball } from "../components/Ball";
+import { PatternPanel } from "../components/PatternPanel";
 import { Zone15Bars, Zone10Bars, OddEvenSplit } from "../components/WindowSummary";
 import { ZONE10_LABELS, ZONE15_LABELS } from "../core/analyzer";
 import { useAppState } from "../state/AppState";
 
+type View = "numbers" | "patterns";
 type SortKey = "number" | "cnt5" | "cnt10" | "cntTotal" | "gap";
 
 const SORTS: Array<{ key: SortKey; label: string }> = [
@@ -19,7 +21,8 @@ const SORTS: Array<{ key: SortKey; label: string }> = [
 ];
 
 export function StatsScreen() {
-  const { analysis, selection } = useAppState();
+  const { analysis, selection, patterns, bands } = useAppState();
+  const [view, setView] = useState<View>("numbers");
   const [sort, setSort] = useState<SortKey>("number");
   const [open, setOpen] = useState<number | null>(null);
 
@@ -32,8 +35,44 @@ export function StatsScreen() {
 
   if (!analysis) return null;
 
+  const switcher = (
+    <div className="segment" role="group" aria-label="통계 종류">
+      <button
+        type="button"
+        className="segment__btn"
+        aria-pressed={view === "numbers"}
+        onClick={() => setView("numbers")}
+      >
+        번호별 통계
+      </button>
+      <button
+        type="button"
+        className="segment__btn"
+        aria-pressed={view === "patterns"}
+        onClick={() => setView("patterns")}
+      >
+        조합 패턴
+      </button>
+    </div>
+  );
+
+  if (view === "patterns") {
+    return (
+      <div className="screen">
+        {switcher}
+        {patterns && bands ? (
+          <PatternPanel stats={patterns} bands={bands} />
+        ) : (
+          <p className="muted">패턴을 계산하는 중…</p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="screen">
+      {switcher}
+
       <section className="card">
         <h2 className="card__title">최근 10회 홀짝</h2>
         <p className="card__sub nums" style={{ marginBottom: 10 }}>

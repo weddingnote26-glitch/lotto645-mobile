@@ -13,10 +13,15 @@
 // (무한 루프 방지 + '무조건 강제하지 않는다').
 
 import { zone10Index, zone15Index } from "./analyzer";
+import { PATTERN_CONDITION_COUNT, patternScore, type PatternBands } from "./patternAnalyzer";
 import { defaultRng } from "./rng";
 import type { Rng } from "./types";
 
-export type GenerationMode = "A" | "B";
+/**
+ * A = 완전 랜덤, B = 분석 기반 균형, C = 과거 당첨 조합 패턴 기반.
+ * A/B는 PC 버전과 동일하고, C는 모바일에서 추가한 방식이다.
+ */
+export type GenerationMode = "A" | "B" | "C";
 
 export function consecutivePairs(combo: number[]): number {
   const c = [...combo].sort((a, b) => a - b);
@@ -58,19 +63,42 @@ function balanceScore(combo: number[], prefer33: boolean): number {
   return score;
 }
 
-/** 조합 1개 생성. mode 'A'=완전 랜덤, 'B'=분석 기반 균형. */
+/**
+ * 조합 1개 생성.
+ * - 'A' 완전 랜덤
+ * - 'B' 분석 기반 균형 (위 균형 조건)
+ * - 'C' 패턴 기반 — 과거 당첨 조합에서 흔했던 모양(홀짝·합계·연속·구간·고저)에 맞춘다.
+ *
+ * B와 C 모두 '조건을 만족하는 조합을 찾을 때까지 다시 뽑되, 정해진 횟수 안에
+ * 못 찾으면 가장 많은 조건을 만족한 조합을 쓴다'는 같은 방식이라 멈추지 않는다.
+ * bands가 없으면 C는 B와 동일하게 동작한다.
+ */
 export function generateCombo(
   mode: GenerationMode,
   rng: Rng,
   core: number | null = null,
   maxAttempts = 400,
+  bands: PatternBands | null = null,
 ): number[] {
   if (mode === "A") return randomCombo(rng, core);
+
+  const usePattern = mode === "C" && bands !== null;
 
   let best: number[] | null = null;
   let bestScore = -1;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const combo = randomCombo(rng, core);
+
+    if (usePattern) {
+      const score = patternScore(combo, bands);
+      if (score === PATTERN_CONDITION_COUNT) return combo;
+      if (score > bestScore) {
+        best = combo;
+        bestScore = score;
+      }
+      continue;
+    }
+
     const prefer33 = attempt < Math.floor(maxAttempts / 2); // 전반부는 3:3 우선 시도
     const score = balanceScore(combo, prefer33);
     if (score === 4) return combo;
@@ -89,13 +117,14 @@ export function generateGames(
   mode: GenerationMode,
   core: number | null = null,
   rng: Rng = defaultRng,
+  bands: PatternBands | null = null,
 ): number[][] {
   const games: number[][] = [];
   const seen = new Set<string>();
   let attempts = 0;
   while (games.length < nGames && attempts < nGames * 200) {
     attempts += 1;
-    const combo = generateCombo(mode, rng, core);
+    const combo = generateCombo(mode, rng, core, 400, bands);
     const key = combo.join(",");
     if (seen.has(key)) continue;
     seen.add(key);
