@@ -529,9 +529,85 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+  min-height: 28px;
   font-size: 13.5px;
   color: var(--text-dim);
   font-weight: 600;
+}
+
+/* 체크해서 고르는 게임 카드 */
+.game--pick {
+  cursor: pointer;
+}
+
+.game--pick input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--primary);
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.game--on {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.game--on .game__head {
+  color: var(--primary-strong);
+}
+
+/* 결과 상단 일괄 저장 바 */
+.savebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-alt);
+}
+
+.savebar__all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-dim);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.savebar__all input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--primary);
+  margin: 0;
+}
+
+.savebar__count {
+  flex: 1 1 auto;
+  text-align: right;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+.savebar__btn {
+  flex: 1 1 100%;
+  min-height: 48px;
+}
+
+/* 저장 확인 시트에서 교체되는 칸 */
+.slot--replace {
+  border-color: var(--warn);
+  background: var(--warn-soft);
 }
 
 /* ---------- 1~45 번호판 (로또 용지형) ---------- */

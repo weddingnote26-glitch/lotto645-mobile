@@ -15,13 +15,13 @@ import { useEffect, useRef, useState } from "react";
 import { generateGames, lockedNumbers } from "../core/combinationGenerator";
 import { parityLabel, parityTargets } from "../core/parityAnalyzer";
 import { combinationPattern } from "../core/patternAnalyzer";
-import type { GenMethod, Settings } from "../storage/db";
+import { SLOT_COUNT, type GenMethod, type Settings } from "../storage/db";
 import { useAppState } from "../state/AppState";
 import type { TabKey } from "../types/nav";
 import type { ShowToast } from "../types/toast";
 import { canShare, copyText, formatGamesText, shareText } from "../utils/share";
 import { Ball, BallRow, ZoneLegend } from "./Ball";
-import { SlotPickerSheet } from "./MyTicket";
+import { planAssignment, SaveConfirmSheet, type SlotAssignment } from "./MyTicket";
 import { NumberPad } from "./NumberPad";
 import { RankedRow, type PickMode } from "./RankedRow";
 
@@ -73,6 +73,7 @@ export function Generator({
     settings,
     updateSettings,
     setFixedNumbers,
+    ticket,
     games,
     setGeneratedGames,
     addGeneratedGame,
@@ -81,9 +82,14 @@ export function Generator({
 
   // 수동 선택은 이번 게임에만 쓰는 값이라 저장하지 않는다.
   const [manual, setManual] = useState<number[]>([]);
-  const [pending, setPending] = useState<{ numbers: number[]; mode: string } | null>(null);
+  // 결과에서 체크한 게임들 (내번호에 한 번에 저장할 대상)
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [plan, setPlan] = useState<SlotAssignment[] | null>(null);
   const resultRef = useRef<HTMLElement>(null);
   const scrollPending = useRef(false);
+
+  // 결과가 새로 만들어지면 체크는 비운다.
+  useEffect(() => setSelected(new Set()), [games]);
 
   // 결과가 화면에 그려진 다음 그 위치로 부드럽게 이동시킨다.
   useEffect(() => {
@@ -185,6 +191,45 @@ export function Generator({
     scrollPending.current = true;
     addGeneratedGame(manual, "수동");
     setManual([]);
+  };
+
+  // ---- 결과 선택 / 일괄 저장 ----
+  // 내번호는 A~E 5칸뿐이라 한 번에 5게임까지만 고를 수 있다.
+  const selectableCount = Math.min(SLOT_COUNT, games.length);
+  const allChecked = selectableCount > 0 && selected.size === selectableCount;
+
+  const toggleGame = (i: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) {
+        next.delete(i);
+      } else if (next.size >= SLOT_COUNT) {
+        onToast(`내번호는 ${SLOT_COUNT}칸이라 한 번에 ${SLOT_COUNT}게임까지 고를 수 있습니다.`);
+        return prev;
+      } else {
+        next.add(i);
+      }
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (allChecked) {
+      setSelected(new Set());
+      return;
+    }
+    setSelected(new Set(Array.from({ length: selectableCount }, (_, i) => i)));
+    if (games.length > SLOT_COUNT) {
+      onToast(`앞에서 ${SLOT_COUNT}게임만 선택했습니다. 내번호가 ${SLOT_COUNT}칸이기 때문입니다.`);
+    }
+  };
+
+  const openSaveConfirm = () => {
+    const picks = [...selected]
+      .sort((a, b) => a - b)
+      .map((i) => ({ numbers: games[i].numbers, mode: games[i].mode }));
+    if (picks.length === 0) return;
+    setPlan(planAssignment(ticket, picks));
   };
 
   const text = games.length
@@ -490,26 +535,53 @@ export function Generator({
             <span className="faint nums">{analysis.latest}회 기준</span>
           </div>
 
+          {/* 상단 일괄 저장 바 — 체크한 게임을 한 번에 내번호로 */}
+          <div className="savebar">
+            <label className="savebar__all">
+              <input
+                type="checkbox"
+                checked={allChecked}
+                onChange={toggleAll}
+                aria-label="전체 선택"
+              />
+              <span>전체 선택</span>
+            </label>
+            <span className="savebar__count nums">
+              선택 {selected.size} / {SLOT_COUNT}
+            </span>
+            <button
+              type="button"
+              className="btn btn--primary savebar__btn"
+              disabled={selected.size === 0}
+              onClick={openSaveConfirm}
+            >
+              내번호에 저장
+            </button>
+          </div>
+
           <div className="stack">
             {games.map((g, i) => {
               const p = combinationPattern(g.numbers);
+              const on = selected.has(i);
               return (
-                <div className="game" key={`${i}-${g.numbers.join(",")}`}>
+                <label
+                  className={`game game--pick${on ? " game--on" : ""}`}
+                  key={`${i}-${g.numbers.join(",")}`}
+                >
                   <div className="game__head">
                     <span>게임 {i + 1}</span>
-                    <button
-                      type="button"
-                      className="btn btn--ghost"
-                      onClick={() => setPending({ numbers: g.numbers, mode: g.mode })}
-                    >
-                      내번호에 저장
-                    </button>
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={() => toggleGame(i)}
+                      aria-label={`게임 ${i + 1} 선택`}
+                    />
                   </div>
-                  <BallRow numbers={g.numbers} />
+                  <BallRow numbers={g.numbers} size="fit" />
                   <span className="faint nums">
                     {g.mode} · 홀 {p.odd} 짝 {6 - p.odd} · 합 {p.sum} · 구간 {p.zones10}개
                   </span>
-                </div>
+                </label>
               );
             })}
           </div>
@@ -531,11 +603,10 @@ export function Generator({
         </section>
       ) : null}
 
-      <SlotPickerSheet
-        numbers={pending?.numbers ?? null}
-        mode={pending?.mode ?? ""}
-        open={pending !== null}
-        onClose={() => setPending(null)}
+      <SaveConfirmSheet
+        plan={plan}
+        open={plan !== null}
+        onClose={() => setPlan(null)}
         onToast={onToast}
         onViewTicket={() => onNavigate("ticket")}
       />

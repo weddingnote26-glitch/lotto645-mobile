@@ -112,68 +112,100 @@ export function MyTicketCard({ onToast }: { onToast: (msg: string) => void }) {
   );
 }
 
-/** 저장할 칸(A~E)을 고르는 바텀시트 */
-export function SlotPickerSheet({
-  numbers,
-  mode,
+/** 어느 게임이 어느 칸에 들어갈지 */
+export interface SlotAssignment {
+  index: number;
+  numbers: number[];
+  mode: string;
+  /** 교체되는 기존 번호 (빈 칸이면 null) */
+  replaces: number[] | null;
+}
+
+/**
+ * 고른 게임들을 A~E 칸에 어떻게 넣을지 정한다.
+ * 빈 칸을 먼저 채우고, 모자라면 앞 칸부터 교체한다.
+ */
+export function planAssignment(
+  ticket: MyTicketType,
+  picks: Array<{ numbers: number[]; mode: string }>,
+): SlotAssignment[] {
+  const empty: number[] = [];
+  const filled: number[] = [];
+  ticket.forEach((s, i) => (s === null ? empty.push(i) : filled.push(i)));
+  const order = [...empty, ...filled];
+
+  return picks.slice(0, order.length).map((p, k) => ({
+    index: order[k],
+    numbers: p.numbers,
+    mode: p.mode,
+    replaces: ticket[order[k]]?.numbers ?? null,
+  }));
+}
+
+/** 저장 전에 어떤 칸에 들어가는지 보여 주고 확인받는 바텀시트 */
+export function SaveConfirmSheet({
+  plan,
   open,
   onClose,
   onToast,
   onViewTicket,
 }: {
-  numbers: number[] | null;
-  mode: string;
+  plan: SlotAssignment[] | null;
   open: boolean;
   onClose: () => void;
   onToast: ShowToast;
   /** 저장 직후 '내번호 보기'로 이동시키고 싶을 때 */
   onViewTicket?: () => void;
 }) {
-  const { ticket, saveToSlot } = useAppState();
+  const { saveToSlots } = useAppState();
 
-  if (!numbers) return null;
+  if (!plan || plan.length === 0) return null;
 
-  const firstEmpty = ticket.findIndex((s) => s === null);
+  const replaced = plan.filter((a) => a.replaces !== null).length;
 
   return (
-    <Sheet open={open} title="어느 칸에 저장할까요?" onClose={onClose}>
-      <div className="stack" style={{ marginBottom: 12 }}>
-        <BallRow numbers={numbers} size="md" />
-        <p className="faint" style={{ margin: 0 }}>
-          {firstEmpty === -1
-            ? "5칸이 모두 차 있습니다. 교체할 칸을 고르세요."
-            : `비어 있는 ${SLOT_LABELS[firstEmpty]}칸을 추천합니다.`}
-        </p>
+    <Sheet open={open} title="내번호에 저장" onClose={onClose}>
+      <p className="card__sub" style={{ marginBottom: 12 }}>
+        {plan.length}게임을 아래 칸에 저장합니다.
+        {replaced > 0 ? ` 이미 번호가 있는 ${replaced}칸은 교체됩니다.` : ""}
+      </p>
+
+      <div className="stack" style={{ marginBottom: 14 }}>
+        {plan.map((a) => (
+          <div className={`slot${a.replaces ? " slot--replace" : ""}`} key={a.index}>
+            <div className="slot__top">
+              <span className="slot__label" aria-hidden="true">
+                {SLOT_LABELS[a.index]}
+              </span>
+              <BallRow numbers={a.numbers} size="fit" />
+            </div>
+            <span className="faint">
+              {a.replaces
+                ? `기존 ${a.replaces.map((n) => String(n).padStart(2, "0")).join(", ")} 을(를) 교체`
+                : "비어 있던 칸"}
+            </span>
+          </div>
+        ))}
       </div>
 
-      <div className="stack">
-        {ticket.map((slot, i) => (
-          <button
-            type="button"
-            key={SLOT_LABELS[i]}
-            className={`slot slot--pick${i === firstEmpty ? " slot--suggest" : ""}`}
-            onClick={async () => {
-              await saveToSlot(i, numbers, mode);
-              onToast(
-                `내번호 ${SLOT_LABELS[i]}칸에 저장했습니다.`,
-                onViewTicket ? { label: "내번호 보기", onClick: onViewTicket } : undefined,
-              );
-              onClose();
-            }}
-          >
-            <span className="slot__top">
-              <span className="slot__label" aria-hidden="true">
-                {SLOT_LABELS[i]}
-              </span>
-              {slot ? (
-                <BallRow numbers={slot.numbers} size="fit" />
-              ) : (
-                <span className="faint">비어 있음 — 여기에 저장</span>
-              )}
-            </span>
-            {slot ? <span className="faint">누르면 이 번호로 교체됩니다.</span> : null}
-          </button>
-        ))}
+      <div className="row">
+        <button type="button" className="btn btn--grow" onClick={onClose}>
+          취소
+        </button>
+        <button
+          type="button"
+          className="btn btn--primary btn--grow"
+          onClick={async () => {
+            await saveToSlots(plan);
+            onToast(
+              `${plan.length}게임을 내번호에 저장했습니다.`,
+              onViewTicket ? { label: "내번호 보기", onClick: onViewTicket } : undefined,
+            );
+            onClose();
+          }}
+        >
+          저장
+        </button>
       </div>
     </Sheet>
   );

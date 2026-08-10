@@ -87,8 +87,10 @@ interface AppStateValue {
   /** 사용자가 고른 엑셀로 교체. 성공하면 안내 문구를 반환. */
   updateFromFile: (file: File) => Promise<{ ok: boolean; message: string }>;
   resetToSeed: () => Promise<void>;
-  /** 지정한 칸(0~4)에 6개 번호를 저장. 이미 차 있으면 교체된다. */
-  saveToSlot: (index: number, numbers: number[], mode: string) => Promise<void>;
+  /** 여러 게임을 A~E 칸에 한 번에 저장. 같은 칸을 지정하면 교체된다. */
+  saveToSlots: (
+    assignments: Array<{ index: number; numbers: number[]; mode: string }>,
+  ) => Promise<void>;
   clearSlot: (index: number) => Promise<void>;
   clearTicket: () => Promise<void>;
   dismissWarnings: () => void;
@@ -217,16 +219,20 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setGames([]);
   }, []);
 
-  const saveToSlot = useCallback(
-    async (index: number, numbers: number[], mode: string) => {
-      if (!analysis) return;
+  const saveToSlots = useCallback(
+    async (assignments: Array<{ index: number; numbers: number[]; mode: string }>) => {
+      if (!analysis || assignments.length === 0) return;
+      const savedAt = new Date().toISOString();
       const next = [...ticket];
-      next[index] = {
-        numbers: [...numbers].sort((a, b) => a - b),
-        baseRound: analysis.latest,
-        mode,
-        savedAt: new Date().toISOString(),
-      };
+      for (const a of assignments) {
+        if (a.index < 0 || a.index >= next.length) continue;
+        next[a.index] = {
+          numbers: [...a.numbers].sort((x, y) => x - y),
+          baseRound: analysis.latest,
+          mode: a.mode,
+          savedAt,
+        };
+      }
       setTicket(next);
       await persistMyTicket(next);
     },
@@ -273,7 +279,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setFixedNumbers,
     updateFromFile,
     resetToSeed,
-    saveToSlot,
+    saveToSlots,
     clearSlot,
     clearTicket,
     dismissWarnings,
