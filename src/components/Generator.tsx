@@ -205,23 +205,26 @@ export function Generator({
     else if (result === "failed") onToast("공유·복사에 실패했습니다.");
   };
 
-  const parityNote = usesParity && parity?.top ? (
-    <div className="parity">
-      <div className="row row--between">
-        <span className="parity__label">최근 홀짝 흐름</span>
-        <strong className="parity__value nums">{parityLabel(parity.top.odd)} 우세</strong>
-      </div>
-      {targetMix.size > 1 ? (
-        <span className="faint nums">
-          {settings.gameCount}게임 구성 ·{" "}
-          {[...targetMix.entries()]
-            .map(([odd, n]) => `${odd}:${6 - odd} ${n}게임`)
-            .join(" · ")}
+  const parityNote =
+    usesParity && parity?.top ? (
+      <div className="parity">
+        <div className="row row--between">
+          <span className="parity__label">홀짝 구성 기준</span>
+          <strong className="parity__value nums">{parityLabel(parity.top.odd)} 중심</strong>
+        </div>
+        {targetMix.size > 1 ? (
+          <span className="faint nums">
+            {settings.gameCount}게임 구성 ·{" "}
+            {[...targetMix.entries()].map(([odd, n]) => `${odd}:${6 - odd} ${n}게임`).join(" · ")}
+          </span>
+        ) : null}
+        <span className="faint">
+          전체 {parity.totalRounds}회 실제 분포에 최근 5·10회 흐름
+          {parity.recentTop ? ` (${parityLabel(parity.recentTop.odd)} 우세)` : ""}을 함께 반영합니다.
+          데이터를 바꾸면 기준도 자동으로 바뀝니다.
         </span>
-      ) : null}
-      <span className="faint">최근 5회·10회 패턴을 기준으로 자동 변경됩니다.</span>
-    </div>
-  ) : null;
+      </div>
+    ) : null;
 
   const fillModeField = (
     <div className="field">

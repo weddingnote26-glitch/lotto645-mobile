@@ -20,15 +20,31 @@ const profile = analyzeParity(analysis);
 
 const oddCount = (combo: number[]) => combo.filter((n) => n % 2 === 1).length;
 
-describe("최근 홀짝 분포 집계", () => {
+/** 이론 확률 — 1~45 중 홀수 23개, 짝수 22개에서 6개를 뽑을 때 (초기하분포) */
+function theoreticalShare(k: number): number {
+  const C = (n: number, r: number) => {
+    if (r < 0 || r > n) return 0;
+    let v = 1;
+    for (let i = 0; i < r; i += 1) v = (v * (n - i)) / (i + 1);
+    return Math.round(v);
+  };
+  return (C(23, k) * C(22, 6 - k)) / C(45, 6);
+}
+
+describe("홀짝 분포 집계", () => {
   it("최근 5회·10회의 회차 수와 합계가 맞는다", () => {
     expect(profile.byOdd.reduce((a, p) => a + p.count5, 0)).toBe(analysis.win5.rounds.length);
     expect(profile.byOdd.reduce((a, p) => a + p.count10, 0)).toBe(analysis.win10.rounds.length);
   });
 
-  it("점수 = 최근5회 × 2 + 최근10회", () => {
+  it("전체 회차 합계가 맞는다", () => {
+    expect(profile.byOdd.reduce((a, p) => a + p.countAll, 0)).toBe(data.rounds.length);
+    expect(profile.totalRounds).toBe(data.rounds.length);
+  });
+
+  it("최근 흐름 점수 = 최근5회 × 2 + 최근10회", () => {
     for (const p of profile.byOdd) {
-      expect(p.score).toBe(p.count5 * 2 + p.count10);
+      expect(p.recentScore).toBe(p.count5 * 2 + p.count10);
     }
   });
 
@@ -37,9 +53,31 @@ describe("최근 홀짝 분포 집계", () => {
     expect(totalOdd).toBe(analysis.win10.odd);
   });
 
-  it("우세 패턴은 점수가 가장 높은 값이다", () => {
-    const best = Math.max(...profile.byOdd.map((p) => p.score));
-    expect(profile.top?.score).toBe(best);
+  it("전체 회차 실제 분포가 이론 확률과 거의 같다 (데이터 건전성)", () => {
+    for (let k = 0; k <= 6; k += 1) {
+      // 1236회 표본이라 2%p 이내면 정상 범위다.
+      expect(Math.abs(profile.byOdd[k].historicalShare - theoreticalShare(k))).toBeLessThan(0.02);
+    }
+  });
+
+  it("가중치 = 0.75 × 전체 비율 + 0.25 × 최근 비율", () => {
+    for (const p of profile.byOdd) {
+      expect(p.weight).toBeCloseTo(0.75 * p.historicalShare + 0.25 * p.recentShare, 10);
+    }
+    expect(profile.byOdd.reduce((a, p) => a + p.weight, 0)).toBeCloseTo(1, 10);
+  });
+
+  it("우세 구성은 가중치가 가장 높은 값이다", () => {
+    const best = Math.max(...profile.byOdd.map((p) => p.weight));
+    expect(profile.top?.weight).toBe(best);
+  });
+
+  it("희귀 패턴이 최근 표본 때문에 부풀려지지 않는다", () => {
+    // 홀6:짝0은 전체의 약 1.2%다. 최근 10회에 한 번 나왔다고 해서
+    // 생성 비중이 실제보다 크게 벗어나면 안 된다.
+    const allOdd = profile.byOdd[6];
+    expect(allOdd.recentShare).toBeGreaterThan(0.1); // 최근 표본만 보면 10% 넘게 잡히지만
+    expect(allOdd.weight).toBeLessThan(0.06); // 최종 비중은 6% 아래로 억제된다
   });
 
   it("같은 데이터면 항상 같은 결과", () => {
@@ -90,12 +128,24 @@ describe("게임별 목표 홀짝 배분", () => {
     }
   });
 
+  it("20게임 배분이 실제 당첨 조합 분포에 가깝다", () => {
+    const t20 = parityTargets(profile, 20);
+    const counts = new Map<number, number>();
+    for (const v of t20) counts.set(v, (counts.get(v) ?? 0) + 1);
+    // 6개 전부 홀수 / 전부 짝수 같은 희귀 구성은 20게임에서 많아야 1게임.
+    expect(counts.get(6) ?? 0).toBeLessThanOrEqual(1);
+    expect(counts.get(0) ?? 0).toBeLessThanOrEqual(1);
+    // 실제로 3분의 1을 차지하는 3:3과 2:4·4:2가 중심이어야 한다.
+    const middle = (counts.get(2) ?? 0) + (counts.get(3) ?? 0) + (counts.get(4) ?? 0);
+    expect(middle).toBeGreaterThanOrEqual(14);
+  });
+
   it("같은 입력이면 항상 같은 배분", () => {
     expect(parityTargets(profile, 10)).toEqual(parityTargets(profile, 10));
   });
 
   it("데이터가 없으면 빈 배열", () => {
-    const empty = { byOdd: [], ranked: [], top: null, totalScore: 0 };
+    const empty = { byOdd: [], ranked: [], top: null, recentTop: null, totalRounds: 0 };
     expect(parityTargets(empty, 5)).toEqual([]);
   });
 
