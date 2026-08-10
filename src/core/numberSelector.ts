@@ -144,11 +144,27 @@ export const PIPELINE: Array<[string, FilterFn]> = [
   ["미출현 간격 1~3회", filterByGap],
 ];
 
-/** 1~9순위 순차 필터로 핵심 추천번호 1개를 선정한다. */
-export function selectCoreNumber(analysis: Analysis, rng: Rng = defaultRng): SelectionResult {
-  let candidates: number[] = Array.from({ length: 45 }, (_, i) => i + 1);
+/**
+ * 1~9순위 순차 필터로 핵심 추천번호 1개를 선정한다.
+ *
+ * pool을 넘기지 않으면 기존과 똑같이 1~45 전체에서 고른다.
+ * pool은 순위 목록을 만들 때(이미 뽑힌 번호를 빼고 다시 고를 때)만 쓴다.
+ * 규칙 자체는 어느 경우에도 동일하다.
+ */
+export function selectCoreNumber(
+  analysis: Analysis,
+  rng: Rng = defaultRng,
+  pool?: number[],
+): SelectionResult {
+  let candidates: number[] = pool
+    ? [...pool].sort((a, b) => a - b)
+    : Array.from({ length: 45 }, (_, i) => i + 1);
   const steps: SelectionStep[] = [];
   let usedRandom = false;
+
+  if (candidates.length === 0) {
+    throw new Error("후보가 비어 있어 추천번호를 고를 수 없습니다.");
+  }
 
   for (let i = 0; i < PIPELINE.length; i += 1) {
     const order = i + 1;
@@ -184,6 +200,43 @@ export function selectCoreNumber(analysis: Analysis, rng: Rng = defaultRng): Sel
   }
 
   return { number: candidates[0], usedRandom, steps };
+}
+
+export interface RankedNumber {
+  number: number;
+  /** 1이 핵심 추천번호 */
+  rank: number;
+  usedRandom: boolean;
+  steps: SelectionStep[];
+}
+
+/**
+ * 추천번호를 1순위부터 count개까지 줄세운다.
+ *
+ * 별도의 점수 체계를 새로 만들지 않는다. 위 순차 필터를 그대로 쓰되,
+ * 이미 뽑힌 번호를 후보에서 빼고 같은 규칙을 다시 돌려 다음 순위를 정한다.
+ * 따라서 1순위는 selectCoreNumber(analysis)와 항상 같은 번호가 된다.
+ */
+export function rankRecommendedNumbers(
+  analysis: Analysis,
+  count = 6,
+  rng: Rng = defaultRng,
+): RankedNumber[] {
+  let pool = Array.from({ length: 45 }, (_, i) => i + 1);
+  const limit = Math.min(count, pool.length);
+  const ranked: RankedNumber[] = [];
+
+  for (let rank = 1; rank <= limit; rank += 1) {
+    const sel = selectCoreNumber(analysis, rng, pool);
+    ranked.push({
+      number: sel.number,
+      rank,
+      usedRandom: sel.usedRandom,
+      steps: sel.steps,
+    });
+    pool = pool.filter((v) => v !== sel.number);
+  }
+  return ranked;
 }
 
 /** 선정 이유 표시용 요약. */

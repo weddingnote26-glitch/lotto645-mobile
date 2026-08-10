@@ -178,17 +178,50 @@ export async function persistMyTicket(ticket: MyTicket): Promise<void> {
 
 // ---------- 화면 설정 ----------
 
+/** 자동 = 전부 프로그램이 뽑음, 반자동 = 일부 고정 + 나머지 자동, 수동 = 6개 직접 선택 */
+export type GenMethod = "auto" | "semi" | "manual";
+
 export interface Settings {
-  /** A=완전 랜덤, B=분석 기반 균형, C=패턴 기반 */
+  /** 자동/반자동 보충에 쓰는 방식. A=완전 랜덤, B=분석 기반 균형, C=패턴 기반 */
   mode: "A" | "B" | "C";
   includeCore: boolean;
   gameCount: number;
+  /** 번호 생성 방식 */
+  genMethod: GenMethod;
+  /** 사용자가 고정한 번호 (0~6개). 앱을 껐다 켜도 유지된다. */
+  fixedNumbers: number[];
+  /** 자동 생성에도 고정번호를 적용할지 */
+  useFixed: boolean;
 }
 
-export const DEFAULT_SETTINGS: Settings = { mode: "B", includeCore: true, gameCount: 5 };
+export const DEFAULT_SETTINGS: Settings = {
+  mode: "B",
+  includeCore: true,
+  gameCount: 5,
+  genMethod: "auto",
+  fixedNumbers: [],
+  useFixed: true,
+};
 
+/** 저장된 값이 낡았거나 손상돼도 항상 쓸 수 있는 형태로 맞춘다. */
 export function loadSettings(): Settings {
-  return { ...DEFAULT_SETTINGS, ...(lsGet<Partial<Settings>>("settings") ?? {}) };
+  const saved = lsGet<Partial<Settings>>("settings") ?? {};
+  const merged = { ...DEFAULT_SETTINGS, ...saved };
+  const fixed = Array.isArray(merged.fixedNumbers)
+    ? [...new Set(merged.fixedNumbers)]
+        .filter((n) => Number.isInteger(n) && n >= 1 && n <= 45)
+        .sort((a, b) => a - b)
+        .slice(0, 6)
+    : [];
+  return {
+    mode: merged.mode === "A" || merged.mode === "C" ? merged.mode : "B",
+    includeCore: merged.includeCore !== false,
+    gameCount: [1, 5, 10, 20].includes(merged.gameCount) ? merged.gameCount : 5,
+    genMethod:
+      merged.genMethod === "semi" || merged.genMethod === "manual" ? merged.genMethod : "auto",
+    fixedNumbers: fixed,
+    useFixed: merged.useFixed !== false,
+  };
 }
 
 export function saveSettings(settings: Settings): void {

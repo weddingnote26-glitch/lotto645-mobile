@@ -16,7 +16,12 @@ import {
 
 import { analyze } from "../core/analyzer";
 import { buildLottoData, loadLottoFile, serializeLottoData } from "../core/excelLoader";
-import { selectCoreNumber, type SelectionResult } from "../core/numberSelector";
+import {
+  rankRecommendedNumbers,
+  selectCoreNumber,
+  type RankedNumber,
+  type SelectionResult,
+} from "../core/numberSelector";
 import {
   analyzePatterns,
   patternBands,
@@ -42,11 +47,19 @@ import {
 
 export const SEED_SOURCE = "앱 내장 기본 데이터";
 
+/** 화면에 보여줄 생성 결과 한 게임. 게임마다 어떤 방식으로 뽑았는지 함께 들고 있는다. */
+export interface GeneratedGame {
+  numbers: number[];
+  mode: string;
+}
+
 interface AppStateValue {
   ready: boolean;
   data: LottoData | null;
   analysis: Analysis | null;
   selection: SelectionResult | null;
+  /** 1~6순위 추천번호. 1순위는 selection.number와 항상 같다. */
+  ranked: RankedNumber[];
   /** 내장 기본 데이터를 쓰는 중이면 true */
   usingSeed: boolean;
   dataSavedAt: string | null;
@@ -59,10 +72,15 @@ interface AppStateValue {
   /** 내 번호 A~E 5칸 (비어 있으면 null) */
   ticket: MyTicket;
   /** 방금 생성한 게임들. 탭을 옮겨도 유지되도록 여기에 둔다. */
-  games: number[][];
-  gamesMode: string;
-  setGeneratedGames: (games: number[][], mode: string) => void;
+  games: GeneratedGame[];
+  /** 결과 목록을 통째로 교체 (자동·반자동 생성) */
+  setGeneratedGames: (numbers: number[][], mode: string) => void;
+  /** 결과 목록 맨 앞에 한 게임 추가 (수동 입력) */
+  addGeneratedGame: (numbers: number[], mode: string) => void;
+  clearGeneratedGames: () => void;
   updateSettings: (patch: Partial<Settings>) => void;
+  /** 고정번호 편집 — 6개를 넘기면 무시된다. */
+  setFixedNumbers: (numbers: number[]) => void;
   /** 사용자가 고른 엑셀로 교체. 성공하면 안내 문구를 반환. */
   updateFromFile: (file: File) => Promise<{ ok: boolean; message: string }>;
   resetToSeed: () => Promise<void>;
@@ -87,8 +105,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [ticket, setTicket] = useState<MyTicket>(emptyTicket);
-  const [games, setGames] = useState<number[][]>([]);
-  const [gamesMode, setGamesMode] = useState("");
+  const [games, setGames] = useState<GeneratedGame[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -118,14 +135,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   // 완전 동률일 때만 무작위가 개입하므로 화면이 리렌더될 때마다 흔들리지 않도록 고정한다.
   const selection = useMemo(() => (analysis ? selectCoreNumber(analysis) : null), [analysis]);
 
+  // 1~6순위. 같은 규칙을 후보만 줄여 가며 다시 돌린 결과라 1순위는 selection과 같다.
+  const ranked = useMemo(() => (analysis ? rankRecommendedNumbers(analysis, 6) : []), [analysis]);
+
   // 전체 회차를 훑는 계산이라 데이터가 바뀔 때만 다시 돌린다.
   const patterns = useMemo(() => (data ? analyzePatterns(data) : null), [data]);
   const bands = useMemo(() => (patterns ? patternBands(patterns) : null), [patterns]);
 
-  const setGeneratedGames = useCallback((next: number[][], mode: string) => {
-    setGames(next);
-    setGamesMode(mode);
+  const setGeneratedGames = useCallback((numbers: number[][], mode: string) => {
+    setGames(numbers.map((n) => ({ numbers: n, mode })));
   }, []);
+
+  const addGeneratedGame = useCallback((numbers: number[], mode: string) => {
+    setGames((prev) => [{ numbers: [...numbers].sort((a, b) => a - b), mode }, ...prev]);
+  }, []);
+
+  const clearGeneratedGames = useCallback(() => setGames([]), []);
 
   const updateSettings = useCallback((patch: Partial<Settings>) => {
     setSettings((prev) => {
@@ -134,6 +159,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       return next;
     });
   }, []);
+
+  const setFixedNumbers = useCallback(
+    (numbers: number[]) => {
+      const clean = [...new Set(numbers)]
+        .filter((n) => Number.isInteger(n) && n >= 1 && n <= 45)
+        .sort((a, b) => a - b);
+      if (clean.length > 6) return;
+      updateSettings({ fixedNumbers: clean });
+    },
+    [updateSettings],
+  );
 
   const updateFromFile = useCallback(async (file: File) => {
     try {
@@ -153,7 +189,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setWarnings(loaded.warnings);
       // 기준 회차가 바뀌었으니 이전 결과는 지운다.
       setGames([]);
-      setGamesMode("");
       return {
         ok: true,
         message: `${loaded.rounds[loaded.rounds.length - 1]}회까지 ${loaded.rounds.length}개 회차를 불러왔습니다.`,
@@ -174,7 +209,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setDataSavedAt(null);
     setWarnings([]);
     setGames([]);
-    setGamesMode("");
   }, []);
 
   const saveToSlot = useCallback(
@@ -216,6 +250,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     data,
     analysis,
     selection,
+    ranked,
     usingSeed,
     dataSavedAt,
     warnings,
@@ -224,9 +259,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     bands,
     ticket,
     games,
-    gamesMode,
     setGeneratedGames,
+    addGeneratedGame,
+    clearGeneratedGames,
     updateSettings,
+    setFixedNumbers,
     updateFromFile,
     resetToSeed,
     saveToSlot,

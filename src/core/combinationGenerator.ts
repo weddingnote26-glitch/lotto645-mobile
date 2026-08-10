@@ -44,12 +44,25 @@ export function coversAllZones15(combo: number[]): boolean {
   return new Set(combo.map(zone15Index)).size === 3;
 }
 
-function randomCombo(rng: Rng, core: number | null): number[] {
+/**
+ * 반드시 넣어야 하는 번호(핵심 추천번호 + 사용자 고정번호)를 하나로 합친다.
+ * 중복은 제거하며, 결과가 6개를 넘으면 앞에서부터 6개만 쓴다.
+ */
+export function lockedNumbers(core: number | null, fixed: number[] = []): number[] {
+  const set = new Set<number>();
+  if (core !== null) set.add(core);
+  for (const n of fixed) {
+    if (Number.isInteger(n) && n >= 1 && n <= 45) set.add(n);
+  }
+  return [...set].sort((a, b) => a - b).slice(0, 6);
+}
+
+function randomCombo(rng: Rng, locked: number[]): number[] {
+  const lockedSet = new Set(locked);
   const pool: number[] = [];
-  for (let n = 1; n <= 45; n += 1) if (n !== core) pool.push(n);
-  const picked = rng.sample(pool, core !== null ? 5 : 6);
-  if (core !== null) picked.push(core);
-  return picked.sort((a, b) => a - b);
+  for (let n = 1; n <= 45; n += 1) if (!lockedSet.has(n)) pool.push(n);
+  const picked = rng.sample(pool, 6 - lockedSet.size);
+  return [...picked, ...lockedSet].sort((a, b) => a - b);
 }
 
 /** 충족한 균형 조건 개수 (0~4). 완화 단계에서 '가장 좋은 조합' 선택 기준. */
@@ -79,15 +92,21 @@ export function generateCombo(
   core: number | null = null,
   maxAttempts = 400,
   bands: PatternBands | null = null,
+  fixed: number[] = [],
 ): number[] {
-  if (mode === "A") return randomCombo(rng, core);
+  const locked = lockedNumbers(core, fixed);
+
+  // 고정번호만으로 6개가 채워지면 더 뽑을 것이 없다 (사실상 수동 번호).
+  if (locked.length === 6) return locked;
+
+  if (mode === "A") return randomCombo(rng, locked);
 
   const usePattern = mode === "C" && bands !== null;
 
   let best: number[] | null = null;
   let bestScore = -1;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const combo = randomCombo(rng, core);
+    const combo = randomCombo(rng, locked);
 
     if (usePattern) {
       const score = patternScore(combo, bands);
@@ -118,13 +137,19 @@ export function generateGames(
   core: number | null = null,
   rng: Rng = defaultRng,
   bands: PatternBands | null = null,
+  fixed: number[] = [],
 ): number[][] {
+  const locked = lockedNumbers(core, fixed);
+
+  // 6개가 이미 고정이면 서로 다른 조합이 존재하지 않으므로 1게임만 낸다.
+  if (locked.length === 6) return [locked];
+
   const games: number[][] = [];
   const seen = new Set<string>();
   let attempts = 0;
   while (games.length < nGames && attempts < nGames * 200) {
     attempts += 1;
-    const combo = generateCombo(mode, rng, core, 400, bands);
+    const combo = generateCombo(mode, rng, core, 400, bands, fixed);
     const key = combo.join(",");
     if (seen.has(key)) continue;
     seen.add(key);

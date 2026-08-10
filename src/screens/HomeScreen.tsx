@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Ball } from "../components/Ball";
 import { Generator } from "../components/Generator";
 import { MyTicketCard } from "../components/MyTicket";
+import { RankedRow } from "../components/RankedRow";
 import { SelectionSteps } from "../components/SelectionSteps";
 import { Sheet } from "../components/Sheet";
 import { WindowCard } from "../components/WindowSummary";
@@ -20,7 +21,7 @@ export function HomeScreen({
   onToast: (msg: string) => void;
   onNavigate: (tab: TabKey) => void;
 }) {
-  const { analysis, selection, data, usingSeed } = useAppState();
+  const { analysis, selection, ranked, data, usingSeed } = useAppState();
   const [showSteps, setShowSteps] = useState(false);
 
   if (!analysis || !selection || !data) return null;
@@ -58,6 +59,8 @@ export function HomeScreen({
             왜 이 번호인가요?
           </button>
         </div>
+
+        <RankedRow ranked={ranked} />
       </section>
 
       <MyTicketCard onToast={onToast} />
