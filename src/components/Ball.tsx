@@ -3,7 +3,9 @@
 
 import { ZONE10_LABELS, zone10Index } from "../core/analyzer";
 
-type Size = "sm" | "md" | "lg";
+// "fit"은 칸 너비에 맞춰 늘어나는 볼이다. 6개를 항상 한 줄에 놓아야 하는
+// 곳(내 번호 A~E)에서 쓴다. 화면이 좁아도 줄바꿈되지 않는다.
+type Size = "sm" | "md" | "lg" | "fit";
 
 export function Ball({ n, size = "md" }: { n: number; size?: Size }) {
   const z = zone10Index(n);
@@ -18,8 +20,11 @@ export function Ball({ n, size = "md" }: { n: number; size?: Size }) {
 }
 
 export function BallRow({ numbers, size = "md" }: { numbers: number[]; size?: Size }) {
+  // fit은 6칸 그리드로 깔아 항상 한 줄을 유지한다.
+  const cls =
+    size === "fit" ? "balls balls--row6" : size === "sm" ? "balls balls--tight" : "balls";
   return (
-    <div className={`balls${size === "sm" ? " balls--tight" : ""}`}>
+    <div className={cls}>
       {numbers.map((n) => (
         <Ball key={n} n={n} size={size} />
       ))}

@@ -52,34 +52,37 @@ export function MyTicketCard({ onToast }: { onToast: (msg: string) => void }) {
       <div className="stack">
         {ticket.map((slot, i) => (
           <div className={`slot${slot ? "" : " slot--empty"}`} key={SLOT_LABELS[i]}>
-            <span className="slot__label" aria-hidden="true">
-              {SLOT_LABELS[i]}
-            </span>
-            <div className="slot__body">
+            {/* 윗줄: 칸 이름 + 번호 6개 (항상 한 줄) */}
+            <div className="slot__top">
+              <span className="slot__label" aria-hidden="true">
+                {SLOT_LABELS[i]}
+              </span>
               {slot ? (
-                <>
-                  <BallRow numbers={slot.numbers} size="sm" />
-                  <span className="faint">
-                    {slot.baseRound}회 기준 · {slot.mode} · {formatDate(slot.savedAt)}
-                  </span>
-                </>
+                <BallRow numbers={slot.numbers} size="fit" />
               ) : (
                 <span className="faint">
                   비어 있음 — 생성 결과에서 [저장]을 누르면 이 칸에 넣을 수 있습니다.
                 </span>
               )}
             </div>
+
+            {/* 아랫줄: 저장 정보 + 비우기 */}
             {slot ? (
-              <button
-                type="button"
-                className="btn btn--ghost btn--danger slot__action"
-                onClick={async () => {
-                  await clearSlot(i);
-                  onToast(`${SLOT_LABELS[i]}칸을 비웠습니다.`);
-                }}
-              >
-                비우기
-              </button>
+              <div className="slot__meta">
+                <span className="faint">
+                  {slot.baseRound}회 기준 · {slot.mode} · {formatDate(slot.savedAt)}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--danger"
+                  onClick={async () => {
+                    await clearSlot(i);
+                    onToast(`${SLOT_LABELS[i]}칸을 비웠습니다.`);
+                  }}
+                >
+                  비우기
+                </button>
+              </div>
             ) : null}
           </div>
         ))}
@@ -158,19 +161,17 @@ export function SlotPickerSheet({
               onClose();
             }}
           >
-            <span className="slot__label" aria-hidden="true">
-              {SLOT_LABELS[i]}
-            </span>
-            <span className="slot__body">
+            <span className="slot__top">
+              <span className="slot__label" aria-hidden="true">
+                {SLOT_LABELS[i]}
+              </span>
               {slot ? (
-                <>
-                  <BallRow numbers={slot.numbers} size="sm" />
-                  <span className="faint">누르면 이 번호로 교체됩니다.</span>
-                </>
+                <BallRow numbers={slot.numbers} size="fit" />
               ) : (
                 <span className="faint">비어 있음 — 여기에 저장</span>
               )}
             </span>
+            {slot ? <span className="faint">누르면 이 번호로 교체됩니다.</span> : null}
           </button>
         ))}
       </div>

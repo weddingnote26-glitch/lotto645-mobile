@@ -382,13 +382,12 @@ export function Generator({
           {/* ---------- 반자동 ---------- */}
           {method === "semi" ? (
             <>
-              <div className="field">
-                <div className="row row--between">
-                  <span className="field__label">고정할 번호를 고르세요 (1~5개)</span>
-                  <span className="chip nums">{fixed.length}/6</span>
-                </div>
-                <NumberPad selected={fixed} onToggle={onToggleFixed} max={6} />
-              </div>
+              <NumberPad
+                selected={fixed}
+                onToggle={onToggleFixed}
+                max={6}
+                title="고정할 번호 (1~5개)"
+              />
 
               <div className="picked">
                 <span className="picked__label">
@@ -445,13 +444,12 @@ export function Generator({
           {/* ---------- 수동 ---------- */}
           {method === "manual" ? (
             <>
-              <div className="field">
-                <div className="row row--between">
-                  <span className="field__label">6개 번호를 선택하세요</span>
-                  <span className="chip nums">선택 {manual.length}/6</span>
-                </div>
-                <NumberPad selected={manual} onToggle={onToggleManual} max={6} />
-              </div>
+              <NumberPad
+                selected={manual}
+                onToggle={onToggleManual}
+                max={6}
+                title="수동 선택 — 6개를 고르세요"
+              />
 
               <div className="picked">
                 <span className="picked__label">선택한 번호</span>

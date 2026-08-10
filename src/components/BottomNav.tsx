@@ -4,12 +4,13 @@
 import type { TabKey } from "../types/nav";
 
 // 실제 사용 흐름(추천 확인 → 번호 생성 → 저장 → 내번호 확인) 순서로 배치한다.
+// 아이콘은 컬러 이모지를 쓴다. 단색 기호보다 작은 화면에서 구분이 훨씬 빠르다.
 const TABS: Array<{ key: TabKey; label: string; icon: string }> = [
-  { key: "home", label: "홈", icon: "◆" },
-  { key: "generate", label: "번호생성", icon: "⬤" },
-  { key: "ticket", label: "내번호", icon: "♥" },
-  { key: "stats", label: "통계", icon: "▦" },
-  { key: "settings", label: "설정", icon: "⚙" },
+  { key: "home", label: "홈", icon: "🏠" },
+  { key: "generate", label: "번호생성", icon: "🎲" },
+  { key: "ticket", label: "내번호", icon: "🎫" },
+  { key: "stats", label: "통계", icon: "📊" },
+  { key: "settings", label: "설정", icon: "⚙️" },
 ];
 
 export function BottomNav({

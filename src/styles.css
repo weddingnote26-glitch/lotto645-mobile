@@ -243,6 +243,23 @@ button {
   gap: 6px;
 }
 
+/* 6개를 항상 한 줄에 — 좁은 화면에서도 줄바꿈되지 않는다 */
+.balls--row6 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
+}
+
+.ball--fit {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  font-size: clamp(14px, 4.1vw, 19px);
+}
+
 /* 구간 색 범례 — 색만으로 정보를 전달하지 않도록 라벨을 함께 표기 */
 .legend {
   display: flex;
@@ -517,55 +534,88 @@ button {
   font-weight: 600;
 }
 
-/* ---------- 1~45 번호판 ---------- */
+/* ---------- 1~45 번호판 (로또 용지형) ---------- */
 
-/* 좁은 화면에서는 6열이라야 한 칸이 44px 아래로 내려가지 않는다.
-   360px 기준 한 칸 ≈ 46px, 400px 이상에서 7열로 늘려 로또 용지에 가깝게 만든다. */
-.pad {
+/* 실제 용지처럼 항상 7열. 카드 안쪽 여백을 좌우로 밀어내
+   360px에서도 한 칸이 43px 이상 확보되게 한다. */
+/* 카드 안쪽 여백만큼 좌우로 밀어내 폭을 최대한 확보한다.
+   360px에서도 한 칸이 44px 가까이 나오게 하기 위함이다. */
+.slip {
+  margin-inline: -16px;
+  padding: 10px 6px;
+  border-block: 1px solid var(--border);
+  background: var(--surface-alt);
+}
+
+.slip__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 4px 8px;
+  border-bottom: 1px dashed var(--border);
+  margin-bottom: 8px;
+}
+
+.slip__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.slip__count {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.slip__grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
 }
 
 @media (min-width: 400px) {
-  .pad {
-    grid-template-columns: repeat(7, 1fr);
+  .slip__grid {
+    gap: 6px;
   }
 }
 
-.pad__btn {
+.slip__cell {
   aspect-ratio: 1 / 1;
-  min-height: 44px;
+  min-height: 42px;
   width: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--surface);
   color: var(--text);
   font-size: 15px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background 0.1s ease,
-    transform 0.1s ease;
+  /* 선택 표시(배경색)는 애니메이션 없이 즉시 반영한다. 애니메이션이 멈추는
+     환경(절전 모드·백그라운드 탭 등)에서 고른 번호가 안 보이면 안 되기 때문이다.
+     눌림 효과(transform)만 부드럽게 준다. */
+  transition: transform 0.1s ease;
 }
 
-.pad__btn:active {
-  transform: scale(0.94);
+.slip__cell:active {
+  transform: scale(0.92);
 }
 
-.pad__btn--on {
+/* 펜으로 칠한 것처럼 채워서 표시 */
+.slip__cell--on {
   background: var(--primary);
   border-color: var(--primary);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.32);
 }
 
-.pad__btn:disabled {
-  opacity: 0.32;
+.slip__cell:disabled {
+  opacity: 0.34;
   cursor: default;
 }
 
@@ -685,14 +735,31 @@ button {
 
 .slot {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
   text-align: left;
-  padding: 11px 12px;
+  padding: 11px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
+}
+
+/* 칸 이름 + 번호 6개를 한 줄에 */
+.slot__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.slot__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
 }
 
 .slot--empty {
@@ -734,11 +801,6 @@ button {
   gap: 6px;
   flex: 1 1 auto;
   min-width: 0;
-}
-
-.slot__action {
-  flex: 0 0 auto;
-  align-self: center;
 }
 
 /* ---------- 아코디언 (상세 통계) ---------- */
@@ -986,7 +1048,7 @@ button {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  color: var(--text-faint);
+  color: var(--text-dim);
   font-size: 12px;
   font-weight: 600;
   padding: 6px 2px;
@@ -994,11 +1056,28 @@ button {
 
 .nav__btn[aria-current="page"] {
   color: var(--primary);
+  font-weight: 800;
 }
 
+/* 컬러 이모지 아이콘. 선택되지 않은 탭은 살짝 눌러 두어 현재 위치가 바로 보인다. */
 .nav__icon {
-  font-size: 18px;
+  font-size: 21px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 28px;
+  border-radius: 999px;
+  opacity: 0.65;
+  filter: grayscale(0.45);
+  /* 현재 탭 표시도 즉시 바뀌어야 하므로 애니메이션을 걸지 않는다. */
+}
+
+.nav__btn[aria-current="page"] .nav__icon {
+  opacity: 1;
+  filter: none;
+  background: var(--primary-soft);
 }
 
 /* ---------- 기타 ---------- */
