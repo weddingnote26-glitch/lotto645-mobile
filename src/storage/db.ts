@@ -216,7 +216,7 @@ export function loadSettings(): Settings {
   return {
     mode: merged.mode === "A" || merged.mode === "C" ? merged.mode : "B",
     includeCore: merged.includeCore !== false,
-    gameCount: [1, 5, 10, 20].includes(merged.gameCount) ? merged.gameCount : 5,
+    gameCount: [1, 5, 10, 15].includes(merged.gameCount) ? merged.gameCount : 5,
     genMethod:
       merged.genMethod === "semi" || merged.genMethod === "manual" ? merged.genMethod : "auto",
     fixedNumbers: fixed,

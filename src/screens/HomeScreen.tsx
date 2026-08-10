@@ -44,7 +44,7 @@ export function HomeScreen({
 
       <section className="card">
         <div className="core">
-          <span className="core__label">통계 분석 핵심번호</span>
+          <span className="core__label">추천 1위 번호</span>
           <Ball n={selection.number} size="lg" />
           <div className="core__facts">
             <span className="chip chip--accent nums">최근 5회 {s.cnt5}회</span>
@@ -72,12 +72,12 @@ export function HomeScreen({
 
       {savedCount > 0 ? (
         <button type="button" className="btn" onClick={() => onNavigate("ticket")}>
-          저장한 내 번호 {savedCount}칸 보기
+          저장된 번호 보기
         </button>
       ) : null}
 
-      <WindowCard title="최근 5회 분석" w={analysis.win5} />
-      <WindowCard title="최근 10회 분석" w={analysis.win10} showLevel />
+      <WindowCard title="최근 당첨 5회차 분석" w={analysis.win5} />
+      <WindowCard title="최근 당첨번호 10회차 분석" w={analysis.win10} showLevel />
 
       <button type="button" className="btn" onClick={() => onNavigate("stats")}>
         1~45 상세 통계 보기

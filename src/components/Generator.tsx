@@ -25,7 +25,7 @@ import { planAssignment, SaveConfirmSheet, type SlotAssignment } from "./MyTicke
 import { NumberPad } from "./NumberPad";
 import { RankedRow, type PickMode } from "./RankedRow";
 
-const COUNTS = [1, 5, 10, 20];
+const COUNTS = [1, 5, 10, 15];
 
 const METHODS: Array<{ key: GenMethod; label: string; help: string }> = [
   { key: "auto", label: "자동", help: "6개 번호를 모두 프로그램이 뽑습니다." },
@@ -341,7 +341,7 @@ export function Generator({
       {/* ① 핵심 추천번호 + ② 상위 추천번호 */}
       <section className="card">
         <div className="core">
-          <span className="core__label">통계 분석 핵심번호</span>
+          <span className="core__label">추천 1위 번호</span>
           {pickMode ? (
             <button
               type="button"

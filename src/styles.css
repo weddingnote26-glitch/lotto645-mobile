@@ -610,6 +610,46 @@ button {
   background: var(--warn-soft);
 }
 
+/* 저장 확인 시트에서 A~E 칸을 직접 고르는 버튼들 */
+.slotpick {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+.slotpick__btn {
+  position: relative;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.slotpick__btn[aria-pressed="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+/* 이미 번호가 들어 있는 칸 표시 */
+.slotpick__dot {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--warn);
+}
+
+.slotpick__btn[aria-pressed="true"] .slotpick__dot {
+  background: #fff;
+}
+
 /* ---------- 1~45 번호판 (로또 용지형) ---------- */
 
 /* 실제 용지처럼 항상 7열. 카드 안쪽 여백을 좌우로 밀어내
@@ -836,6 +876,19 @@ button {
   justify-content: space-between;
   gap: 8px;
   width: 100%;
+}
+
+/* 좁은 화면에서 버튼이 줄어들며 글자가 세로로 쌓이던 것을 막는다.
+   'A' 라벨처럼 항상 가로로 한 줄에 표시된다. */
+.slot__erase {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.slot__meta .faint {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .slot--empty {
