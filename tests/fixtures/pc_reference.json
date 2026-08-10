@@ -1,0 +1,676 @@
+{
+  "source_file": "C:\\Users\\USER\\AppData\\Local\\Temp\\claude\\C--Users-USER-Desktop-LottoAnalyzer---\\dab7bd86-f6f2-45d0-81bd-2d8360d2633a\\scratchpad\\lotto_source.xlsx",
+  "latest": 1236,
+  "total_rounds": 1236,
+  "first_round": 1,
+  "latest_draw": [
+    12,
+    18,
+    21,
+    29,
+    34,
+    38
+  ],
+  "latest_bonus": 10,
+  "first_draw": [
+    10,
+    23,
+    29,
+    33,
+    37,
+    40
+  ],
+  "warnings": [],
+  "win5": {
+    "rounds_first": 1232,
+    "rounds_last": 1236,
+    "total_balls": 30,
+    "odd": 18,
+    "even": 12,
+    "zone10_counts": [
+      5,
+      10,
+      5,
+      8,
+      2
+    ],
+    "zone10_rates": [
+      0.75,
+      1.5,
+      0.75,
+      1.2,
+      0.6
+    ],
+    "zone10_levels": [
+      "낮음",
+      "높음",
+      "낮음",
+      "높음",
+      "낮음"
+    ],
+    "zone15_counts": [
+      11,
+      9,
+      10
+    ],
+    "zone15_ratios": [
+      0.3666666667,
+      0.3,
+      0.3333333333
+    ]
+  },
+  "win10": {
+    "rounds_first": 1227,
+    "rounds_last": 1236,
+    "total_balls": 60,
+    "odd": 30,
+    "even": 30,
+    "zone10_counts": [
+      10,
+      17,
+      11,
+      15,
+      7
+    ],
+    "zone10_rates": [
+      0.75,
+      1.275,
+      0.825,
+      1.125,
+      1.05
+    ],
+    "zone10_levels": [
+      "낮음",
+      "높음",
+      "낮음",
+      "보통",
+      "보통"
+    ],
+    "zone15_counts": [
+      21,
+      17,
+      22
+    ],
+    "zone15_ratios": [
+      0.35,
+      0.2833333333,
+      0.3666666667
+    ]
+  },
+  "stats": {
+    "1": {
+      "cnt5": 1,
+      "cnt10": 2,
+      "cnt_total": 170,
+      "last_round": 1234,
+      "gap": 2,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 0,
+      "zone15": 0
+    },
+    "2": {
+      "cnt5": 1,
+      "cnt10": 1,
+      "cnt_total": 155,
+      "last_round": 1233,
+      "gap": 3,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 0,
+      "zone15": 0
+    },
+    "3": {
+      "cnt5": 0,
+      "cnt10": 1,
+      "cnt_total": 172,
+      "last_round": 1230,
+      "gap": 6,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 0,
+      "zone15": 0
+    },
+    "4": {
+      "cnt5": 0,
+      "cnt10": 1,
+      "cnt_total": 162,
+      "last_round": 1231,
+      "gap": 5,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 0,
+      "zone15": 0
+    },
+    "5": {
+      "cnt5": 0,
+      "cnt10": 0,
+      "cnt_total": 153,
+      "last_round": 1213,
+      "gap": 23,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 0,
+      "zone15": 0
+    },
+    "6": {
+      "cnt5": 1,
+      "cnt10": 1,
+      "cnt_total": 166,
+      "last_round": 1235,
+      "gap": 1,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 0,
+      "zone15": 0
+    },
+    "7": {
+      "cnt5": 2,
+      "cnt10": 2,
+      "cnt_total": 170,
+      "last_round": 1235,
+      "gap": 1,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 0,
+      "zone15": 0
+    },
+    "8": {
+      "cnt5": 0,
+      "cnt10": 1,
+      "cnt_total": 158,
+      "last_round": 1230,
+      "gap": 6,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 0,
+      "zone15": 0
+    },
+    "9": {
+      "cnt5": 0,
+      "cnt10": 1,
+      "cnt_total": 136,
+      "last_round": 1230,
+      "gap": 6,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 0,
+      "zone15": 0
+    },
+    "10": {
+      "cnt5": 0,
+      "cnt10": 0,
+      "cnt_total": 161,
+      "last_round": 1217,
+      "gap": 19,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 0,
+      "zone15": 0
+    },
+    "11": {
+      "cnt5": 1,
+      "cnt10": 1,
+      "cnt_total": 166,
+      "last_round": 1235,
+      "gap": 1,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 1,
+      "zone15": 0
+    },
+    "12": {
+      "cnt5": 2,
+      "cnt10": 3,
+      "cnt_total": 180,
+      "last_round": 1236,
+      "gap": 0,
+      "in_prev": true,
+      "odd": false,
+      "zone10": 1,
+      "zone15": 0
+    },
+    "13": {
+      "cnt5": 0,
+      "cnt10": 2,
+      "cnt_total": 179,
+      "last_round": 1231,
+      "gap": 5,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 1,
+      "zone15": 0
+    },
+    "14": {
+      "cnt5": 0,
+      "cnt10": 2,
+      "cnt_total": 172,
+      "last_round": 1231,
+      "gap": 5,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 1,
+      "zone15": 0
+    },
+    "15": {
+      "cnt5": 3,
+      "cnt10": 3,
+      "cnt_total": 170,
+      "last_round": 1235,
+      "gap": 1,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 1,
+      "zone15": 0
+    },
+    "16": {
+      "cnt5": 0,
+      "cnt10": 1,
+      "cnt_total": 168,
+      "last_round": 1227,
+      "gap": 9,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 1,
+      "zone15": 1
+    },
+    "17": {
+      "cnt5": 0,
+      "cnt10": 0,
+      "cnt_total": 171,
+      "last_round": 1226,
+      "gap": 10,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 1,
+      "zone15": 1
+    },
+    "18": {
+      "cnt5": 1,
+      "cnt10": 2,
+      "cnt_total": 177,
+      "last_round": 1236,
+      "gap": 0,
+      "in_prev": true,
+      "odd": false,
+      "zone10": 1,
+      "zone15": 1
+    },
+    "19": {
+      "cnt5": 2,
+      "cnt10": 2,
+      "cnt_total": 170,
+      "last_round": 1234,
+      "gap": 2,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 1,
+      "zone15": 1
+    },
+    "20": {
+      "cnt5": 1,
+      "cnt10": 1,
+      "cnt_total": 170,
+      "last_round": 1233,
+      "gap": 3,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 1,
+      "zone15": 1
+    },
+    "21": {
+      "cnt5": 1,
+      "cnt10": 1,
+      "cnt_total": 167,
+      "last_round": 1236,
+      "gap": 0,
+      "in_prev": true,
+      "odd": true,
+      "zone10": 2,
+      "zone15": 1
+    },
+    "22": {
+      "cnt5": 1,
+      "cnt10": 2,
+      "cnt_total": 145,
+      "last_round": 1232,
+      "gap": 4,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 2,
+      "zone15": 1
+    },
+    "23": {
+      "cnt5": 0,
+      "cnt10": 0,
+      "cnt_total": 147,
+      "last_round": 1216,
+      "gap": 20,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 2,
+      "zone15": 1
+    },
+    "24": {
+      "cnt5": 1,
+      "cnt10": 2,
+      "cnt_total": 166,
+      "last_round": 1232,
+      "gap": 4,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 2,
+      "zone15": 1
+    },
+    "25": {
+      "cnt5": 1,
+      "cnt10": 1,
+      "cnt_total": 153,
+      "last_round": 1233,
+      "gap": 3,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 2,
+      "zone15": 1
+    },
+    "26": {
+      "cnt5": 0,
+      "cnt10": 0,
+      "cnt_total": 165,
+      "last_round": 1226,
+      "gap": 10,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 2,
+      "zone15": 1
+    },
+    "27": {
+      "cnt5": 0,
+      "cnt10": 0,
+      "cnt_total": 181,
+      "last_round": 1224,
+      "gap": 12,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 2,
+      "zone15": 1
+    },
+    "28": {
+      "cnt5": 0,
+      "cnt10": 1,
+      "cnt_total": 157,
+      "last_round": 1230,
+      "gap": 6,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 2,
+      "zone15": 1
+    },
+    "29": {
+      "cnt5": 1,
+      "cnt10": 3,
+      "cnt_total": 156,
+      "last_round": 1236,
+      "gap": 0,
+      "in_prev": true,
+      "odd": true,
+      "zone10": 2,
+      "zone15": 1
+    },
+    "30": {
+      "cnt5": 0,
+      "cnt10": 1,
+      "cnt_total": 158,
+      "last_round": 1228,
+      "gap": 8,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 2,
+      "zone15": 1
+    },
+    "31": {
+      "cnt5": 1,
+      "cnt10": 3,
+      "cnt_total": 169,
+      "last_round": 1234,
+      "gap": 2,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 3,
+      "zone15": 2
+    },
+    "32": {
+      "cnt5": 0,
+      "cnt10": 0,
+      "cnt_total": 144,
+      "last_round": 1223,
+      "gap": 13,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 3,
+      "zone15": 2
+    },
+    "33": {
+      "cnt5": 0,
+      "cnt10": 0,
+      "cnt_total": 174,
+      "last_round": 1223,
+      "gap": 13,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 3,
+      "zone15": 2
+    },
+    "34": {
+      "cnt5": 1,
+      "cnt10": 3,
+      "cnt_total": 185,
+      "last_round": 1236,
+      "gap": 0,
+      "in_prev": true,
+      "odd": false,
+      "zone10": 3,
+      "zone15": 2
+    },
+    "35": {
+      "cnt5": 1,
+      "cnt10": 2,
+      "cnt_total": 163,
+      "last_round": 1234,
+      "gap": 2,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 3,
+      "zone15": 2
+    },
+    "36": {
+      "cnt5": 1,
+      "cnt10": 1,
+      "cnt_total": 164,
+      "last_round": 1232,
+      "gap": 4,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 3,
+      "zone15": 2
+    },
+    "37": {
+      "cnt5": 1,
+      "cnt10": 2,
+      "cnt_total": 173,
+      "last_round": 1233,
+      "gap": 3,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 3,
+      "zone15": 2
+    },
+    "38": {
+      "cnt5": 1,
+      "cnt10": 2,
+      "cnt_total": 171,
+      "last_round": 1236,
+      "gap": 0,
+      "in_prev": true,
+      "odd": false,
+      "zone10": 3,
+      "zone15": 2
+    },
+    "39": {
+      "cnt5": 1,
+      "cnt10": 1,
+      "cnt_total": 168,
+      "last_round": 1235,
+      "gap": 1,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 3,
+      "zone15": 2
+    },
+    "40": {
+      "cnt5": 1,
+      "cnt10": 1,
+      "cnt_total": 173,
+      "last_round": 1233,
+      "gap": 3,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 3,
+      "zone15": 2
+    },
+    "41": {
+      "cnt5": 0,
+      "cnt10": 1,
+      "cnt_total": 150,
+      "last_round": 1227,
+      "gap": 9,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 4,
+      "zone15": 2
+    },
+    "42": {
+      "cnt5": 0,
+      "cnt10": 2,
+      "cnt_total": 157,
+      "last_round": 1230,
+      "gap": 6,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 4,
+      "zone15": 2
+    },
+    "43": {
+      "cnt5": 2,
+      "cnt10": 2,
+      "cnt_total": 165,
+      "last_round": 1235,
+      "gap": 1,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 4,
+      "zone15": 2
+    },
+    "44": {
+      "cnt5": 0,
+      "cnt10": 2,
+      "cnt_total": 164,
+      "last_round": 1228,
+      "gap": 8,
+      "in_prev": false,
+      "odd": false,
+      "zone10": 4,
+      "zone15": 2
+    },
+    "45": {
+      "cnt5": 0,
+      "cnt10": 0,
+      "cnt_total": 175,
+      "last_round": 1224,
+      "gap": 12,
+      "in_prev": false,
+      "odd": true,
+      "zone10": 4,
+      "zone15": 2
+    }
+  },
+  "core_number": 15,
+  "used_random": false,
+  "selection_steps": [
+    {
+      "order": 1,
+      "title": "최근 5회 출현빈도",
+      "detail": "최근 5회 최다 출현 = 3회",
+      "before": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45
+      ],
+      "after": [
+        15
+      ]
+    },
+    {
+      "order": 1,
+      "title": "확정",
+      "detail": "후보가 1개로 좁혀져 확정",
+      "before": [
+        15
+      ],
+      "after": [
+        15
+      ]
+    }
+  ],
+  "selection_reason": {
+    "최근 5회 출현": "3회",
+    "최근 10회 출현": "3회",
+    "직전 회차": "미출현",
+    "미출현 간격": "1회",
+    "구간": "11~20",
+    "홀짝": "홀수"
+  },
+  "selection_log": "[1단계] 최근 5회 출현빈도\n  최근 5회 최다 출현 = 3회\n  후보 45개 → 1개: 15\n\n[1단계] 확정\n  후보가 1개로 좁혀져 확정\n  후보 1개 → 1개: 15\n"
+}
