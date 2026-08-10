@@ -3,10 +3,12 @@
 
 import type { TabKey } from "../types/nav";
 
+// 실제 사용 흐름(추천 확인 → 번호 생성 → 저장 → 내번호 확인) 순서로 배치한다.
 const TABS: Array<{ key: TabKey; label: string; icon: string }> = [
   { key: "home", label: "홈", icon: "◆" },
-  { key: "stats", label: "통계", icon: "▦" },
   { key: "generate", label: "번호생성", icon: "⬤" },
+  { key: "ticket", label: "내번호", icon: "♥" },
+  { key: "stats", label: "통계", icon: "▦" },
   { key: "settings", label: "설정", icon: "⚙" },
 ];
 

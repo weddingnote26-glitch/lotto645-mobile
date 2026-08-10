@@ -632,6 +632,55 @@ button {
   color: var(--text-faint);
 }
 
+.ranked__item--on {
+  background: var(--primary-soft);
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+.ranked__item--on .ranked__rank {
+  color: var(--primary-strong);
+}
+
+/* 핵심번호를 눌러 번호판에 넣을 수 있는 상태 */
+.core__pick {
+  border: none;
+  background: transparent;
+  padding: 4px;
+  border-radius: 999px;
+  line-height: 0;
+}
+
+.core__pick--on {
+  box-shadow: 0 0 0 4px var(--primary-soft);
+}
+
+/* ---------- 최근 홀짝 흐름 안내 ---------- */
+
+.parity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-soft);
+}
+
+.parity__label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary-strong);
+}
+
+.parity__value {
+  font-size: 16px;
+  color: var(--primary-strong);
+}
+
+.parity .faint {
+  color: var(--primary-strong);
+  opacity: 0.78;
+}
+
 /* ---------- 내 번호 A~E 칸 ---------- */
 
 .slot {
@@ -986,15 +1035,40 @@ button {
   transform: translateX(-50%);
   bottom: calc(var(--nav-h) + var(--safe-b) + 16px);
   z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   background: #1f2937;
   color: #fff;
   border-radius: 999px;
-  padding: 12px 20px;
+  padding: 10px 12px 10px 20px;
   font-size: 15px;
   font-weight: 600;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  max-width: min(92vw, 420px);
+  max-width: min(92vw, 460px);
   text-align: center;
+}
+
+.toast:not(:has(.toast__action)) {
+  padding: 12px 20px;
+}
+
+.toast__action {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.toast__action:active {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .file-input {

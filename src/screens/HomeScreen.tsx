@@ -1,11 +1,9 @@
-// 홈. 화면을 내려가며 보이는 순서:
-// 최신 분석 회차 → 핵심 추천번호 → 번호 생성 → 생성 결과 → 최근 분석 요약 → 상세 분석 이동
+// 홈. 사용자 흐름의 시작점 — 기준 회차와 추천번호를 확인하고 번호생성으로 넘어간다.
+//   최신 분석 회차 → 핵심 추천번호 + 상위 추천번호 → 번호 만들기 → 최근 분석 → 상세 통계
 
 import { useState } from "react";
 
 import { Ball } from "../components/Ball";
-import { Generator } from "../components/Generator";
-import { MyTicketCard } from "../components/MyTicket";
 import { RankedRow } from "../components/RankedRow";
 import { SelectionSteps } from "../components/SelectionSteps";
 import { Sheet } from "../components/Sheet";
@@ -13,21 +11,22 @@ import { WindowCard } from "../components/WindowSummary";
 import { selectionReason } from "../core/numberSelector";
 import { useAppState } from "../state/AppState";
 import type { TabKey } from "../types/nav";
+import type { ShowToast } from "../types/toast";
 
 export function HomeScreen({
-  onToast,
   onNavigate,
 }: {
-  onToast: (msg: string) => void;
+  onToast: ShowToast;
   onNavigate: (tab: TabKey) => void;
 }) {
-  const { analysis, selection, ranked, data, usingSeed } = useAppState();
+  const { analysis, selection, ranked, data, usingSeed, ticket } = useAppState();
   const [showSteps, setShowSteps] = useState(false);
 
   if (!analysis || !selection || !data) return null;
 
   const s = analysis.stats[selection.number];
   const reason = selectionReason(analysis, selection.number);
+  const savedCount = ticket.filter(Boolean).length;
 
   return (
     <div className="screen">
@@ -45,7 +44,7 @@ export function HomeScreen({
 
       <section className="card">
         <div className="core">
-          <span className="core__label">통계 분석 추천번호</span>
+          <span className="core__label">통계 분석 핵심번호</span>
           <Ball n={selection.number} size="lg" />
           <div className="core__facts">
             <span className="chip chip--accent nums">최근 5회 {s.cnt5}회</span>
@@ -63,9 +62,19 @@ export function HomeScreen({
         <RankedRow ranked={ranked} />
       </section>
 
-      <MyTicketCard onToast={onToast} />
+      <button
+        type="button"
+        className="btn btn--primary btn--cta"
+        onClick={() => onNavigate("generate")}
+      >
+        추천번호로 번호 만들기
+      </button>
 
-      <Generator onToast={onToast} />
+      {savedCount > 0 ? (
+        <button type="button" className="btn" onClick={() => onNavigate("ticket")}>
+          저장한 내 번호 {savedCount}칸 보기
+        </button>
+      ) : null}
 
       <WindowCard title="최근 5회 분석" w={analysis.win5} />
       <WindowCard title="최근 10회 분석" w={analysis.win10} showLevel />

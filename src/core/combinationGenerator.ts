@@ -65,11 +65,21 @@ function randomCombo(rng: Rng, locked: number[]): number[] {
   return [...picked, ...lockedSet].sort((a, b) => a - b);
 }
 
-/** 충족한 균형 조건 개수 (0~4). 완화 단계에서 '가장 좋은 조합' 선택 기준. */
-function balanceScore(combo: number[], prefer33: boolean): number {
+/**
+ * 충족한 균형 조건 개수 (0~4). 완화 단계에서 '가장 좋은 조합' 선택 기준.
+ *
+ * targetOdd가 주어지면 홀짝 조건을 그 값으로 본다. 이 값은 최근 5·10회의 실제
+ * 홀짝 분포에서 계산된 것이라(core/parityAnalyzer.ts) 데이터가 바뀌면 함께 바뀐다.
+ * targetOdd가 null이면 예전과 똑같이 동작한다.
+ */
+function balanceScore(combo: number[], prefer33: boolean, targetOdd: number | null): number {
   const oc = oddCount(combo);
   let score = 0;
-  score += (prefer33 ? oc === 3 : oc >= 2 && oc <= 4) ? 1 : 0;
+  if (targetOdd !== null) {
+    score += oc === targetOdd ? 1 : 0;
+  } else {
+    score += (prefer33 ? oc === 3 : oc >= 2 && oc <= 4) ? 1 : 0;
+  }
   score += distinctZones10(combo) >= 3 ? 1 : 0;
   score += coversAllZones15(combo) ? 1 : 0;
   score += consecutivePairs(combo) <= 1 ? 1 : 0;
@@ -93,12 +103,14 @@ export function generateCombo(
   maxAttempts = 400,
   bands: PatternBands | null = null,
   fixed: number[] = [],
+  targetOdd: number | null = null,
 ): number[] {
   const locked = lockedNumbers(core, fixed);
 
   // 고정번호만으로 6개가 채워지면 더 뽑을 것이 없다 (사실상 수동 번호).
   if (locked.length === 6) return locked;
 
+  // 완전 랜덤은 말 그대로 무작위여야 하므로 홀짝 목표를 적용하지 않는다.
   if (mode === "A") return randomCombo(rng, locked);
 
   const usePattern = mode === "C" && bands !== null;
@@ -109,7 +121,7 @@ export function generateCombo(
     const combo = randomCombo(rng, locked);
 
     if (usePattern) {
-      const score = patternScore(combo, bands);
+      const score = patternScore(combo, bands, targetOdd);
       if (score === PATTERN_CONDITION_COUNT) return combo;
       if (score > bestScore) {
         best = combo;
@@ -119,9 +131,9 @@ export function generateCombo(
     }
 
     const prefer33 = attempt < Math.floor(maxAttempts / 2); // 전반부는 3:3 우선 시도
-    const score = balanceScore(combo, prefer33);
+    const score = balanceScore(combo, prefer33, targetOdd);
     if (score === 4) return combo;
-    const loose = balanceScore(combo, false);
+    const loose = balanceScore(combo, false, targetOdd);
     if (loose > bestScore) {
       best = combo;
       bestScore = loose;
@@ -138,6 +150,11 @@ export function generateGames(
   rng: Rng = defaultRng,
   bands: PatternBands | null = null,
   fixed: number[] = [],
+  /**
+   * 게임별 목표 홀수 개수. core/parityAnalyzer.parityTargets()가 만들어 준다.
+   * 비워 두면 예전과 똑같이 동작한다.
+   */
+  targets: number[] = [],
 ): number[][] {
   const locked = lockedNumbers(core, fixed);
 
@@ -149,7 +166,9 @@ export function generateGames(
   let attempts = 0;
   while (games.length < nGames && attempts < nGames * 200) {
     attempts += 1;
-    const combo = generateCombo(mode, rng, core, 400, bands, fixed);
+    // 목표 홀짝은 '몇 번째 게임인지'에 따라 정해진다.
+    const targetOdd = targets.length ? targets[games.length % targets.length] : null;
+    const combo = generateCombo(mode, rng, core, 400, bands, fixed, targetOdd);
     const key = combo.join(",");
     if (seen.has(key)) continue;
     seen.add(key);

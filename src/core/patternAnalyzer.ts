@@ -207,11 +207,20 @@ export function patternBands(stats: PatternStats): PatternBands {
   };
 }
 
-/** 조합이 각 기준을 몇 개나 만족하는지 (0~5). 모드 C의 채점 기준. */
-export function patternScore(combo: number[], bands: PatternBands): number {
+/**
+ * 조합이 각 기준을 몇 개나 만족하는지 (0~5). 모드 C의 채점 기준.
+ *
+ * targetOdd가 주어지면 홀짝만 그 값으로 판정한다 (최근 5·10회 흐름 반영).
+ * 넘기지 않으면 전체 회차 기준인 bands.oddAllowed를 그대로 쓴다.
+ */
+export function patternScore(
+  combo: number[],
+  bands: PatternBands,
+  targetOdd: number | null = null,
+): number {
   const p = combinationPattern(combo);
   let score = 0;
-  if (bands.oddAllowed.includes(p.odd)) score += 1;
+  if (targetOdd !== null ? p.odd === targetOdd : bands.oddAllowed.includes(p.odd)) score += 1;
   if (bands.consecutiveAllowed.includes(p.consecutive)) score += 1;
   if (bands.zones10Allowed.includes(p.zones10)) score += 1;
   if (bands.highAllowed.includes(p.high)) score += 1;

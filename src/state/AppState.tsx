@@ -22,6 +22,7 @@ import {
   type RankedNumber,
   type SelectionResult,
 } from "../core/numberSelector";
+import { analyzeParity, type ParityProfile } from "../core/parityAnalyzer";
 import {
   analyzePatterns,
   patternBands,
@@ -69,6 +70,8 @@ interface AppStateValue {
   patterns: PatternStats | null;
   /** 패턴 기반 생성이 쓰는 기준값 */
   bands: PatternBands | null;
+  /** 최근 5·10회 홀짝 분포 (생성 시 목표 홀짝의 근거) */
+  parity: ParityProfile | null;
   /** 내 번호 A~E 5칸 (비어 있으면 null) */
   ticket: MyTicket;
   /** 방금 생성한 게임들. 탭을 옮겨도 유지되도록 여기에 둔다. */
@@ -141,6 +144,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   // 전체 회차를 훑는 계산이라 데이터가 바뀔 때만 다시 돌린다.
   const patterns = useMemo(() => (data ? analyzePatterns(data) : null), [data]);
   const bands = useMemo(() => (patterns ? patternBands(patterns) : null), [patterns]);
+
+  // 최근 5·10회의 실제 홀짝 분포. 데이터가 바뀌면 함께 다시 계산된다.
+  const parity = useMemo(() => (analysis ? analyzeParity(analysis) : null), [analysis]);
 
   const setGeneratedGames = useCallback((numbers: number[][], mode: string) => {
     setGames(numbers.map((n) => ({ numbers: n, mode })));
@@ -257,6 +263,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     settings,
     patterns,
     bands,
+    parity,
     ticket,
     games,
     setGeneratedGames,

@@ -3,6 +3,7 @@
 
 import { SLOT_LABELS, type MyTicket as MyTicketType } from "../storage/db";
 import { useAppState } from "../state/AppState";
+import type { ShowToast } from "../types/toast";
 import { copyText, shareText } from "../utils/share";
 import { BallRow } from "./Ball";
 import { Sheet } from "./Sheet";
@@ -115,12 +116,15 @@ export function SlotPickerSheet({
   open,
   onClose,
   onToast,
+  onViewTicket,
 }: {
   numbers: number[] | null;
   mode: string;
   open: boolean;
   onClose: () => void;
-  onToast: (msg: string) => void;
+  onToast: ShowToast;
+  /** 저장 직후 '내번호 보기'로 이동시키고 싶을 때 */
+  onViewTicket?: () => void;
 }) {
   const { ticket, saveToSlot } = useAppState();
 
@@ -147,7 +151,10 @@ export function SlotPickerSheet({
             className={`slot slot--pick${i === firstEmpty ? " slot--suggest" : ""}`}
             onClick={async () => {
               await saveToSlot(i, numbers, mode);
-              onToast(`${SLOT_LABELS[i]}칸에 저장했습니다.`);
+              onToast(
+                `내번호 ${SLOT_LABELS[i]}칸에 저장했습니다.`,
+                onViewTicket ? { label: "내번호 보기", onClick: onViewTicket } : undefined,
+              );
               onClose();
             }}
           >

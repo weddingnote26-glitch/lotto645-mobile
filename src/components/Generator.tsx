@@ -1,22 +1,29 @@
 // 번호 생성 영역.
 //
+// 화면 순서: ① 핵심 추천번호 → ② 상위 추천번호 5개 → ③ 자동/반자동/수동
+//            → ④ 생성 설정 → ⑤ 생성 버튼 → ⑥ 바로 아래 결과
+//
 //   자동   — 프로그램이 6개를 다 뽑는다 (분석 기반 / 패턴 기반 / 완전 랜덤)
 //   반자동 — 내가 고정한 번호 1~5개 + 나머지를 프로그램이 채운다
 //   수동   — 1~45 번호판에서 6개를 직접 고른다
 //
-// '고정번호'는 반자동에서 고른 번호를 그대로 쓰며, 자동 생성에도 켜 두면 모든
-// 게임에 들어간다. 브라우저에 저장되어 앱을 껐다 켜도 남는다.
+// 홀짝 구성은 고정값이 아니라 최근 5·10회의 실제 분포에서 계산한다
+// (core/parityAnalyzer.ts). 데이터가 바뀌면 기준도 자동으로 바뀐다.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { generateGames, lockedNumbers } from "../core/combinationGenerator";
+import { parityLabel, parityTargets } from "../core/parityAnalyzer";
 import { combinationPattern } from "../core/patternAnalyzer";
 import type { GenMethod, Settings } from "../storage/db";
 import { useAppState } from "../state/AppState";
+import type { TabKey } from "../types/nav";
+import type { ShowToast } from "../types/toast";
 import { canShare, copyText, formatGamesText, shareText } from "../utils/share";
-import { BallRow, ZoneLegend } from "./Ball";
+import { Ball, BallRow, ZoneLegend } from "./Ball";
 import { SlotPickerSheet } from "./MyTicket";
 import { NumberPad } from "./NumberPad";
+import { RankedRow, type PickMode } from "./RankedRow";
 
 const COUNTS = [1, 5, 10, 20];
 
@@ -34,12 +41,12 @@ const FILL_MODES: Array<{ key: Settings["mode"]; label: string; help: string }> 
   {
     key: "B",
     label: "분석 기반",
-    help: "홀짝 2:4~4:2(3:3 우선), 10단위 구간 3개 이상, 15단위 구간 각 1개 이상, 연속번호 1쌍 이하가 되도록 쏠림만 줄입니다.",
+    help: "10단위 구간 3개 이상, 15단위 구간 각 1개 이상, 연속번호 1쌍 이하가 되도록 쏠림만 줄입니다.",
   },
   {
     key: "C",
     label: "패턴 기반",
-    help: "지금까지 실제로 당첨된 조합에서 흔했던 모양(홀짝·합계·연속번호·구간·저고 비율)에 맞춰 뽑습니다.",
+    help: "지금까지 당첨된 조합에서 흔했던 모양(합계·연속번호·구간·저고 비율)에 맞춰 뽑습니다.",
   },
   { key: "A", label: "완전 랜덤", help: "1~45에서 중복 없이 무작위로 뽑습니다." },
 ];
@@ -50,11 +57,19 @@ export function modeLabel(mode: Settings["mode"]): string {
   return "분석 기반";
 }
 
-export function Generator({ onToast }: { onToast: (msg: string) => void }) {
+export function Generator({
+  onToast,
+  onNavigate,
+}: {
+  onToast: ShowToast;
+  onNavigate: (tab: TabKey) => void;
+}) {
   const {
     analysis,
     selection,
+    ranked,
     bands,
+    parity,
     settings,
     updateSettings,
     setFixedNumbers,
@@ -67,6 +82,32 @@ export function Generator({ onToast }: { onToast: (msg: string) => void }) {
   // 수동 선택은 이번 게임에만 쓰는 값이라 저장하지 않는다.
   const [manual, setManual] = useState<number[]>([]);
   const [pending, setPending] = useState<{ numbers: number[]; mode: string } | null>(null);
+  const resultRef = useRef<HTMLElement>(null);
+  const scrollPending = useRef(false);
+
+  // 결과가 화면에 그려진 다음 그 위치로 부드럽게 이동시킨다.
+  useEffect(() => {
+    if (!scrollPending.current) return;
+    scrollPending.current = false;
+    const el = resultRef.current;
+    if (!el) return;
+
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    if (reduce) {
+      el.scrollIntoView({ behavior: "auto", block: "start" });
+      return;
+    }
+
+    const before = window.scrollY;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // 화면이 백그라운드에 있는 등 부드러운 이동이 아예 실행되지 않는 환경이 있다.
+    // 잠시 뒤에도 그대로면 즉시 이동으로 대체해, 결과를 놓치는 일이 없게 한다.
+    const timer = window.setTimeout(() => {
+      if (window.scrollY === before) el.scrollIntoView({ behavior: "auto", block: "start" });
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [games]);
 
   if (!analysis || !selection) return null;
 
@@ -74,8 +115,8 @@ export function Generator({ onToast }: { onToast: (msg: string) => void }) {
   const fill = FILL_MODES.find((m) => m.key === settings.mode) ?? FILL_MODES[0];
   const fixed = settings.fixedNumbers;
   const core = settings.includeCore ? selection.number : null;
+  const usesParity = settings.mode !== "A";
 
-  // 자동에서 실제로 들어갈 번호 = 추천번호 + (켜져 있으면) 고정번호. 중복은 한 번만.
   const autoLocked = lockedNumbers(core, settings.useFixed ? fixed : []);
   const semiLocked = lockedNumbers(core, fixed);
 
@@ -105,6 +146,21 @@ export function Generator({ onToast }: { onToast: (msg: string) => void }) {
     setManual(toggle(manual, n, 6));
   };
 
+  // 반자동·수동일 때만 추천번호를 눌러 번호판에 넣을 수 있다.
+  const pickMode: PickMode | undefined =
+    method === "semi"
+      ? { selected: fixed, onToggle: onToggleFixed }
+      : method === "manual"
+        ? { selected: manual, onToggle: onToggleManual }
+        : undefined;
+
+  // 최근 5·10회 홀짝 분포로 게임별 목표 홀수 개수를 정한다.
+  const targets = usesParity && parity ? parityTargets(parity, settings.gameCount) : [];
+  const targetMix = targets.reduce<Map<number, number>>((m, t) => {
+    m.set(t, (m.get(t) ?? 0) + 1);
+    return m;
+  }, new Map());
+
   const onGenerate = () => {
     const useFixedNow = method === "semi" ? fixed : settings.useFixed ? fixed : [];
     const next = generateGames(
@@ -114,9 +170,11 @@ export function Generator({ onToast }: { onToast: (msg: string) => void }) {
       undefined,
       bands,
       useFixedNow,
+      targets,
     );
     const label =
       method === "semi" ? `반자동 · ${modeLabel(settings.mode)}` : `자동 · ${modeLabel(settings.mode)}`;
+    scrollPending.current = true;
     setGeneratedGames(next, label);
     if (next.length < settings.gameCount) {
       onToast(`서로 다른 조합이 ${next.length}게임까지만 가능해 그만큼만 만들었습니다.`);
@@ -124,8 +182,8 @@ export function Generator({ onToast }: { onToast: (msg: string) => void }) {
   };
 
   const onAddManual = () => {
+    scrollPending.current = true;
     addGeneratedGame(manual, "수동");
-    onToast("수동 번호를 결과에 추가했습니다.");
     setManual([]);
   };
 
@@ -146,6 +204,24 @@ export function Generator({ onToast }: { onToast: (msg: string) => void }) {
     if (result === "copied") onToast("공유를 지원하지 않아 번호를 복사했습니다.");
     else if (result === "failed") onToast("공유·복사에 실패했습니다.");
   };
+
+  const parityNote = usesParity && parity?.top ? (
+    <div className="parity">
+      <div className="row row--between">
+        <span className="parity__label">최근 홀짝 흐름</span>
+        <strong className="parity__value nums">{parityLabel(parity.top.odd)} 우세</strong>
+      </div>
+      {targetMix.size > 1 ? (
+        <span className="faint nums">
+          {settings.gameCount}게임 구성 ·{" "}
+          {[...targetMix.entries()]
+            .map(([odd, n]) => `${odd}:${6 - odd} ${n}게임`)
+            .join(" · ")}
+        </span>
+      ) : null}
+      <span className="faint">최근 5회·10회 패턴을 기준으로 자동 변경됩니다.</span>
+    </div>
+  ) : null;
 
   const fillModeField = (
     <div className="field">
@@ -214,11 +290,30 @@ export function Generator({ onToast }: { onToast: (msg: string) => void }) {
 
   return (
     <>
+      {/* ① 핵심 추천번호 + ② 상위 추천번호 */}
       <section className="card">
-        <h2 className="card__title" style={{ marginBottom: 12 }}>
-          번호 생성
-        </h2>
+        <div className="core">
+          <span className="core__label">통계 분석 핵심번호</span>
+          {pickMode ? (
+            <button
+              type="button"
+              className={`core__pick${pickMode.selected.includes(selection.number) ? " core__pick--on" : ""}`}
+              aria-pressed={pickMode.selected.includes(selection.number)}
+              onClick={() => pickMode.onToggle(selection.number)}
+            >
+              <Ball n={selection.number} size="lg" />
+            </button>
+          ) : (
+            <Ball n={selection.number} size="lg" />
+          )}
+          {pickMode ? <span className="faint">누르면 번호판에 추가됩니다</span> : null}
+        </div>
 
+        <RankedRow ranked={ranked} pick={pickMode} />
+      </section>
+
+      {/* ③ 생성 방식 + ④ 설정 + ⑤ 생성 버튼 */}
+      <section className="card">
         <div className="stack">
           <div className="field">
             <span className="field__label" id="method-label">
@@ -246,6 +341,7 @@ export function Generator({ onToast }: { onToast: (msg: string) => void }) {
           {method === "auto" ? (
             <>
               {fillModeField}
+              {parityNote}
               {coreToggle}
 
               {fixed.length > 0 ? (
@@ -254,7 +350,7 @@ export function Generator({ onToast }: { onToast: (msg: string) => void }) {
                     <span className="toggle__text">고정번호 사용</span>
                     <br />
                     <span className="faint">
-                      모든 게임에 {fixed.join(", ")} 포함 (반자동 탭에서 편집)
+                      모든 게임에 {fixed.join(", ")} 포함 (반자동에서 편집)
                     </span>
                   </span>
                   <input
@@ -320,6 +416,7 @@ export function Generator({ onToast }: { onToast: (msg: string) => void }) {
               ) : null}
 
               {fillModeField}
+              {fixed.length === 6 ? null : parityNote}
               {coreToggle}
 
               {semiLocked.length > 0 ? (
@@ -377,17 +474,16 @@ export function Generator({ onToast }: { onToast: (msg: string) => void }) {
                 onClick={onAddManual}
                 disabled={manual.length !== 6}
               >
-                {manual.length === 6
-                  ? "이 번호로 추가"
-                  : `${6 - manual.length}개 더 선택하세요`}
+                {manual.length === 6 ? "이 번호로 추가" : `${6 - manual.length}개 더 선택하세요`}
               </button>
             </>
           ) : null}
         </div>
       </section>
 
+      {/* ⑥ 결과 — 생성 버튼 바로 아래 */}
       {games.length > 0 ? (
-        <section className="card">
+        <section className="card" ref={resultRef}>
           <div className="row row--between" style={{ marginBottom: 10 }}>
             <h2 className="card__title">생성 결과</h2>
             <span className="faint nums">{analysis.latest}회 기준</span>
@@ -399,26 +495,19 @@ export function Generator({ onToast }: { onToast: (msg: string) => void }) {
               return (
                 <div className="game" key={`${i}-${g.numbers.join(",")}`}>
                   <div className="game__head">
-                    <span>
-                      게임 {i + 1} · {g.mode}
-                    </span>
-                    <span className="nums">
-                      홀 {p.odd} : 짝 {6 - p.odd} · 합 {p.sum}
-                    </span>
-                  </div>
-                  <BallRow numbers={g.numbers} />
-                  <div className="row row--between">
-                    <span className="faint nums">
-                      구간 {p.zones10}개 · 연속 {p.consecutive}쌍 · 저 {6 - p.high} : 고 {p.high}
-                    </span>
+                    <span>게임 {i + 1}</span>
                     <button
                       type="button"
                       className="btn btn--ghost"
                       onClick={() => setPending({ numbers: g.numbers, mode: g.mode })}
                     >
-                      저장
+                      내번호에 저장
                     </button>
                   </div>
+                  <BallRow numbers={g.numbers} />
+                  <span className="faint nums">
+                    {g.mode} · 홀 {p.odd} 짝 {6 - p.odd} · 합 {p.sum} · 구간 {p.zones10}개
+                  </span>
                 </div>
               );
             })}
@@ -447,6 +536,7 @@ export function Generator({ onToast }: { onToast: (msg: string) => void }) {
         open={pending !== null}
         onClose={() => setPending(null)}
         onToast={onToast}
+        onViewTicket={() => onNavigate("ticket")}
       />
     </>
   );
