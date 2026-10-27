@@ -9,6 +9,7 @@ import { SequencePanel } from "../components/SequencePanel";
 import { Zone15Bars, Zone10Bars, OddEvenSplit } from "../components/WindowSummary";
 import { ZONE10_LABELS, ZONE15_LABELS } from "../core/analyzer";
 import { useAppState } from "../state/AppState";
+import type { TabKey } from "../types/nav";
 
 type View = "numbers" | "patterns" | "sequence";
 type SortKey = "number" | "cnt5" | "cnt10" | "cntTotal" | "gap";
@@ -21,7 +22,7 @@ const SORTS: Array<{ key: SortKey; label: string }> = [
   { key: "gap", label: "오래 안 나온순" },
 ];
 
-export function StatsScreen() {
+export function StatsScreen({ onNavigate }: { onNavigate: (tab: TabKey) => void }) {
   const { analysis, selection, patterns, bands } = useAppState();
   const [view, setView] = useState<View>("numbers");
   const [sort, setSort] = useState<SortKey>("number");
@@ -69,7 +70,7 @@ export function StatsScreen() {
     return (
       <div className="screen">
         {switcher}
-        <SequencePanel />
+        <SequencePanel onNavigate={onNavigate} />
       </div>
     );
   }

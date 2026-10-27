@@ -58,7 +58,7 @@ function Shell() {
             {tab === "ticket" ? (
               <TicketScreen onToast={showToast} onNavigate={navigate} />
             ) : null}
-            {tab === "stats" ? <StatsScreen /> : null}
+            {tab === "stats" ? <StatsScreen onNavigate={navigate} /> : null}
             {tab === "settings" ? <SettingsScreen onToast={showToast} /> : null}
           </>
         )}

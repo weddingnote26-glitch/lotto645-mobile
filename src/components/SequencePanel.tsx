@@ -10,6 +10,8 @@ import { KIND_LABEL } from "../core/groupAnalyzer";
 import type { EndRoundAnalysis } from "../core/endRoundAnalyzer";
 import { bandLabel } from "../core/endRoundAnalyzer";
 import { useAppState } from "../state/AppState";
+import type { SeqSource } from "../core/sequenceGenerator";
+import type { TabKey } from "../types/nav";
 import { BallRow } from "./Ball";
 
 type View = "column" | "digit" | "palace" | "endRound";
@@ -53,7 +55,7 @@ function GroupRow({ g, max }: { g: GroupStat; max: number }) {
   );
 }
 
-function GroupView({ a, onPick }: { a: GroupAnalysis; onPick: (nums: number[]) => void }) {
+function GroupView({ a, onStart }: { a: GroupAnalysis; onStart: (s: SeqSource) => void }) {
   const max = Math.max(...a.groups.map((g) => g.gap), 1);
   const top = a.byOverdue[0];
   const kind = KIND_LABEL[a.kind];
@@ -72,11 +74,11 @@ function GroupView({ a, onPick }: { a: GroupAnalysis; onPick: (nums: number[]) =
         </div>
         <button
           type="button"
-          className="btn"
+          className="btn btn--primary"
           style={{ marginTop: 10, width: "100%" }}
-          onClick={() => onPick(top.members)}
+          onClick={() => onStart(a.kind as SeqSource)}
         >
-          {top.label} 번호 번호판에 담기
+          이 분석으로 번호 만들기
         </button>
       </section>
 
@@ -91,7 +93,7 @@ function GroupView({ a, onPick }: { a: GroupAnalysis; onPick: (nums: number[]) =
   );
 }
 
-function EndRoundView({ a, onPick }: { a: EndRoundAnalysis; onPick: (nums: number[]) => void }) {
+function EndRoundView({ a, onStart }: { a: EndRoundAnalysis; onStart: (s: SeqSource) => void }) {
   const cand = a.candidates.map((c) => c.number);
   return (
     <>
@@ -134,11 +136,11 @@ function EndRoundView({ a, onPick }: { a: EndRoundAnalysis; onPick: (nums: numbe
             <BallRow numbers={cand} size="fit" />
             <button
               type="button"
-              className="btn"
+              className="btn btn--primary"
               style={{ marginTop: 12, width: "100%" }}
-              onClick={() => onPick(cand)}
+              onClick={() => onStart("endRound")}
             >
-              후보 {cand.length}개 번호판에 담기
+              이 분석으로 번호 만들기
             </button>
           </>
         ) : (
@@ -159,7 +161,7 @@ function EndRoundView({ a, onPick }: { a: EndRoundAnalysis; onPick: (nums: numbe
 }
 
 /** 쌍동끝 알림 카드 */
-function PairAlertCard({ alert, onPick }: { alert: PairAlert; onPick: (n: number[]) => void }) {
+function PairAlertCard({ alert, onStart }: { alert: PairAlert; onStart: (s: SeqSource) => void }) {
   return (
     <section className="card">
       <div className="row row--between" style={{ marginBottom: 8 }}>
@@ -196,11 +198,11 @@ function PairAlertCard({ alert, onPick }: { alert: PairAlert; onPick: (n: number
 
       <button
         type="button"
-        className="btn"
+        className="btn btn--primary"
         style={{ marginTop: 12, width: "100%" }}
-        onClick={() => onPick(alert.pool)}
+        onClick={() => onStart("digit")}
       >
-        예상수 번호판에 담기
+        이 예상수로 번호 만들기
       </button>
 
       <div className="notice notice--warn" style={{ marginTop: 12 }}>
@@ -212,8 +214,8 @@ function PairAlertCard({ alert, onPick }: { alert: PairAlert; onPick: (n: number
   );
 }
 
-export function SequencePanel() {
-  const { columns, digits, palaces, endRound, pairAlert, settings, setFixedNumbers } =
+export function SequencePanel({ onNavigate }: { onNavigate: (tab: TabKey) => void }) {
+  const { columns, digits, palaces, endRound, pairAlert, settings, updateSettings } =
     useAppState();
   const [view, setView] = useState<View>("column");
 
@@ -221,8 +223,11 @@ export function SequencePanel() {
     return <p className="muted">분석을 계산하는 중…</p>;
   }
 
-  // 번호판(고정번호)은 최대 6개라 앞에서 잘라 담는다.
-  const pick = (nums: number[]) => setFixedNumbers(nums.slice(0, 6));
+  // 해당 분석을 고른 채 번호생성 '수열' 방식으로 넘어간다.
+  const start = (source: SeqSource) => {
+    updateSettings({ genMethod: "sequence", seqSource: source });
+    onNavigate("generate");
+  };
 
   return (
     <div className="screen">
@@ -245,12 +250,12 @@ export function SequencePanel() {
         탭에서 바꿀 수 있습니다.
       </div>
 
-      {pairAlert && view === "digit" ? <PairAlertCard alert={pairAlert} onPick={pick} /> : null}
+      {pairAlert && view === "digit" ? <PairAlertCard alert={pairAlert} onStart={start} /> : null}
 
-      {view === "column" ? <GroupView a={columns} onPick={pick} /> : null}
-      {view === "digit" ? <GroupView a={digits} onPick={pick} /> : null}
-      {view === "palace" ? <GroupView a={palaces} onPick={pick} /> : null}
-      {view === "endRound" ? <EndRoundView a={endRound} onPick={pick} /> : null}
+      {view === "column" ? <GroupView a={columns} onStart={start} /> : null}
+      {view === "digit" ? <GroupView a={digits} onStart={start} /> : null}
+      {view === "palace" ? <GroupView a={palaces} onStart={start} /> : null}
+      {view === "endRound" ? <EndRoundView a={endRound} onStart={start} /> : null}
 
       <p className="disclaimer">
         이 지표들은 과거 기록을 보는 각도일 뿐입니다. 로또는 매회 독립적인 무작위 추첨이라 미출주기나
