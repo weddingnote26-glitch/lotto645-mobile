@@ -3,6 +3,7 @@
 
 import { useRef, useState } from "react";
 
+import { AddDrawCard } from "../components/AddDrawCard";
 import { useAppState } from "../state/AppState";
 import { ANALYSIS_FROM_OPTIONS } from "../storage/db";
 import { SEED_LATEST_ROUND, SEED_ROUND_COUNT } from "../data/seedDraws";
@@ -128,6 +129,8 @@ export function SettingsScreen({ onToast }: { onToast: (msg: string) => void }) 
           </div>
         </section>
       ) : null}
+
+      <AddDrawCard onToast={onToast} />
 
       <section className="card">
         <h2 className="card__title" style={{ marginBottom: 4 }}>

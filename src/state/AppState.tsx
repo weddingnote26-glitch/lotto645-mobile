@@ -108,6 +108,12 @@ interface AppStateValue {
   /** 사용자가 고른 엑셀로 교체. 성공하면 안내 문구를 반환. */
   updateFromFile: (file: File) => Promise<{ ok: boolean; message: string }>;
   resetToSeed: () => Promise<void>;
+  /** 회차 한 개를 직접 추가한다 (엑셀 없이 최신화). */
+  addDraw: (
+    round: number,
+    numbers: number[],
+    bonus: number | null,
+  ) => Promise<{ ok: boolean; message: string }>;
   /** 여러 게임을 A~E 칸에 한 번에 저장. 같은 칸을 지정하면 교체된다. */
   saveToSlots: (
     assignments: Array<{ index: number; numbers: number[]; mode: string }>,
@@ -251,6 +257,38 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const addDraw = useCallback(
+    async (round: number, numbers: number[], bonus: number | null) => {
+      if (!data) return { ok: false, message: "데이터가 아직 준비되지 않았습니다." };
+      if (data.draws.has(round)) return { ok: false, message: `${round}회는 이미 들어 있습니다.` };
+
+      const rows = serializeLottoData(data);
+      const sorted = [...numbers].sort((a, b) => a - b);
+      rows.push(bonus === null ? [round, ...sorted] : [round, ...sorted, bonus]);
+      rows.sort((a, b) => a[0] - b[0]);
+
+      const next = buildLottoData(rows, usingSeed ? "직접 입력" : `${data.source} + 직접 입력`);
+      const savedAt = new Date().toISOString();
+      await saveDataset({
+        rows,
+        source: next.source,
+        savedAt,
+        latest: next.rounds[next.rounds.length - 1],
+        count: next.rounds.length,
+      });
+      setData(next);
+      setUsingSeed(false);
+      setDataSavedAt(savedAt);
+      // 기준 회차가 바뀌었으니 이전 생성 결과는 지운다.
+      setGames([]);
+      return {
+        ok: true,
+        message: `${round}회를 추가했습니다. 이제 ${next.rounds[next.rounds.length - 1]}회 기준입니다.`,
+      };
+    },
+    [data, usingSeed],
+  );
+
   const resetToSeed = useCallback(async () => {
     await clearDataset();
     setData(seedLottoData());
@@ -325,6 +363,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setFixedNumbers,
     updateFromFile,
     resetToSeed,
+    addDraw,
     saveToSlots,
     clearSlot,
     clearTicket,

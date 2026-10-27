@@ -1409,3 +1409,22 @@ button {
   color: var(--primary-strong);
   opacity: 0.8;
 }
+
+/* 붙여넣기 입력창 */
+.textarea {
+  width: 100%;
+  min-height: 96px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 15.5px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.textarea::placeholder {
+  color: var(--text-faint);
+}
