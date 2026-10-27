@@ -1387,3 +1387,25 @@ button {
   padding: 10px 12px;
   text-align: left;
 }
+
+/* 수열 방식 — 어떤 묶음을 쓰는지 보여 주는 카드 */
+.seqplan {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: var(--primary-soft);
+}
+
+.seqplan__title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--primary-strong);
+}
+
+.seqplan .faint {
+  color: var(--primary-strong);
+  opacity: 0.8;
+}

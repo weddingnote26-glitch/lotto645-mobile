@@ -16,6 +16,12 @@ import { generateGames, lockedNumbers } from "../core/combinationGenerator";
 import { parityLabel, parityTargets } from "../core/parityAnalyzer";
 import { combinationPattern } from "../core/patternAnalyzer";
 import { KIND_LABEL } from "../core/groupAnalyzer";
+import {
+  buildSeqPlan,
+  generateSeqGames,
+  SEQ_SOURCES,
+  type SeqSource,
+} from "../core/sequenceGenerator";
 import { SLOT_COUNT, type GenMethod, type Settings } from "../storage/db";
 import { useAppState } from "../state/AppState";
 import type { TabKey } from "../types/nav";
@@ -36,7 +42,14 @@ const METHODS: Array<{ key: GenMethod; label: string; help: string }> = [
     help: "원하는 번호를 1~5개 고정하면 나머지를 프로그램이 채웁니다.",
   },
   { key: "manual", label: "수동", help: "1~45에서 6개를 직접 고릅니다." },
+  {
+    key: "sequence",
+    label: "수열",
+    help: "세로줄·끝수·9궁도·끝회차 분석에서 주목할 묶음을 골라, 그 번호를 포함한 조합을 만듭니다.",
+  },
 ];
+
+const SEED_COUNTS = [1, 2, 3, 4];
 
 const FILL_MODES: Array<{ key: Settings["mode"]; label: string; help: string }> = [
   {
@@ -72,6 +85,8 @@ export function Generator({
     bands,
     parity,
     columns,
+    digits,
+    palaces,
     endRound,
     pairAlert,
     settings,
@@ -164,6 +179,16 @@ export function Generator({
         ? { selected: manual, onToggle: onToggleManual }
         : undefined;
 
+  // 수열 방식이 쓸 계획 (어떤 묶음에서 몇 개를 넣을지)
+  const seqPlan =
+    analysis && (columns || digits || palaces || endRound)
+      ? buildSeqPlan(
+          settings.seqSource,
+          { analysis, columns, digits, palaces, endRound, pairAlert },
+          settings.seqSeedCount,
+        )
+      : null;
+
   // 수열 분석에서 바로 담을 수 있는 묶음들 (반자동 번호판용)
   const seqPicks: Array<{ label: string; numbers: number[] }> = [];
   if (columns) {
@@ -192,6 +217,26 @@ export function Generator({
     m.set(t, (m.get(t) ?? 0) + 1);
     return m;
   }, new Map());
+
+  const onGenerateSequence = () => {
+    if (!seqPlan) return;
+    const made = generateSeqGames(
+      seqPlan,
+      settings.gameCount,
+      settings.mode,
+      core,
+      bands,
+      targets,
+    );
+    scrollPending.current = true;
+    setGeneratedGames(
+      made.map((g) => g.numbers),
+      `수열 · ${seqPlan.title}`,
+    );
+    if (made.length < settings.gameCount) {
+      onToast(`서로 다른 조합이 ${made.length}게임까지만 가능해 그만큼만 만들었습니다.`);
+    }
+  };
 
   const onGenerate = () => {
     const useFixedNow = method === "semi" ? fixed : settings.useFixed ? fixed : [];
@@ -532,6 +577,87 @@ export function Generator({
               >
                 {fixed.length === 0 ? "고정할 번호를 먼저 고르세요" : "반자동 생성"}
               </button>
+            </>
+          ) : null}
+
+          {/* ---------- 수열 ---------- */}
+          {method === "sequence" ? (
+            <>
+              <div className="field">
+                <span className="field__label" id="seq-src-label">
+                  어떤 분석을 쓸까요
+                </span>
+                <div className="segment" role="group" aria-labelledby="seq-src-label">
+                  {SEQ_SOURCES.map((o) => (
+                    <button
+                      key={o.key}
+                      type="button"
+                      className="segment__btn"
+                      aria-pressed={settings.seqSource === o.key}
+                      onClick={() => updateSettings({ seqSource: o.key as SeqSource })}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {seqPlan ? (
+                <>
+                  <div className="seqplan">
+                    <div className="row row--between">
+                      <span className="seqplan__title">{seqPlan.title}</span>
+                      <span className="chip chip--accent nums">{seqPlan.pool.length}개 묶음</span>
+                    </div>
+                    <span className="faint nums">{seqPlan.detail}</span>
+                    <BallRow numbers={seqPlan.pool} size="sm" />
+                    <span className="faint">{seqPlan.reason}</span>
+                  </div>
+
+                  <div className="field">
+                    <span className="field__label" id="seq-count-label">
+                      한 게임에 몇 개 포함
+                    </span>
+                    <div className="segment" role="group" aria-labelledby="seq-count-label">
+                      {SEED_COUNTS.map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          className="segment__btn"
+                          disabled={c > seqPlan.pool.length}
+                          aria-pressed={settings.seqSeedCount === c}
+                          onClick={() => updateSettings({ seqSeedCount: c })}
+                        >
+                          {c}개
+                        </button>
+                      ))}
+                    </div>
+                    <p className="faint" style={{ margin: 0 }}>
+                      게임마다 이 묶음에서 {seqPlan.seedCount}개씩 다르게 뽑고, 나머지{" "}
+                      {6 - seqPlan.seedCount}개는 아래 방식으로 채웁니다.
+                    </p>
+                  </div>
+
+                  {fillModeField}
+                  {parityNote}
+                  {coreToggle}
+                  {countField}
+
+                  <button
+                    type="button"
+                    className="btn btn--primary btn--cta"
+                    onClick={onGenerateSequence}
+                  >
+                    수열 조합 생성
+                  </button>
+
+                  <div className="notice notice--warn">{seqPlan.caution}</div>
+                </>
+              ) : (
+                <p className="faint" style={{ margin: 0 }}>
+                  이 분석을 계산할 수 없습니다. 데이터를 확인해 주세요.
+                </p>
+              )}
             </>
           ) : null}
 

@@ -178,8 +178,8 @@ export async function persistMyTicket(ticket: MyTicket): Promise<void> {
 
 // ---------- 화면 설정 ----------
 
-/** 자동 = 전부 프로그램이 뽑음, 반자동 = 일부 고정 + 나머지 자동, 수동 = 6개 직접 선택 */
-export type GenMethod = "auto" | "semi" | "manual";
+/** 자동 = 전부 프로그램이 뽑음, 반자동 = 일부 고정 + 나머지 자동, 수동 = 6개 직접 선택, 수열 = 분석 묶음 기반 */
+export type GenMethod = "auto" | "semi" | "manual" | "sequence";
 
 export interface Settings {
   /** 자동/반자동 보충에 쓰는 방식. A=완전 랜덤, B=분석 기반 균형, C=패턴 기반 */
@@ -197,6 +197,10 @@ export interface Settings {
    * 262 = 추첨 운영이 바뀐 시점부터만 보기, 1 = 전체 회차.
    */
   analysisFrom: number;
+  /** 수열 방식에서 어떤 분석을 쓸지 */
+  seqSource: "column" | "digit" | "palace" | "endRound";
+  /** 수열 묶음에서 한 게임에 몇 개를 넣을지 (1~4) */
+  seqSeedCount: number;
 }
 
 /** 분석 시작 회차 선택지 */
@@ -213,6 +217,8 @@ export const DEFAULT_SETTINGS: Settings = {
   fixedNumbers: [],
   useFixed: true,
   analysisFrom: 262,
+  seqSource: "column",
+  seqSeedCount: 3,
 };
 
 /** 저장된 값이 낡았거나 손상돼도 항상 쓸 수 있는 형태로 맞춘다. */
@@ -229,13 +235,18 @@ export function loadSettings(): Settings {
     mode: merged.mode === "A" || merged.mode === "C" ? merged.mode : "B",
     includeCore: merged.includeCore !== false,
     gameCount: [1, 5, 10, 15].includes(merged.gameCount) ? merged.gameCount : 5,
-    genMethod:
-      merged.genMethod === "semi" || merged.genMethod === "manual" ? merged.genMethod : "auto",
+    genMethod: ["semi", "manual", "sequence"].includes(merged.genMethod as string)
+      ? merged.genMethod
+      : "auto",
     fixedNumbers: fixed,
     useFixed: merged.useFixed !== false,
     analysisFrom: ANALYSIS_FROM_OPTIONS.some((o) => o.value === merged.analysisFrom)
       ? merged.analysisFrom
       : 262,
+    seqSource: ["column", "digit", "palace", "endRound"].includes(merged.seqSource as string)
+      ? merged.seqSource
+      : "column",
+    seqSeedCount: [1, 2, 3, 4].includes(merged.seqSeedCount) ? merged.seqSeedCount : 3,
   };
 }
 
