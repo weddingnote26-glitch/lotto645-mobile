@@ -1428,3 +1428,10 @@ button {
 .textarea::placeholder {
   color: var(--text-faint);
 }
+
+/* 안내 문구 안의 링크 */
+.notice a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+}

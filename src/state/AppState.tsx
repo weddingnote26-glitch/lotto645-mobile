@@ -114,6 +114,11 @@ interface AppStateValue {
     numbers: number[],
     bonus: number | null,
   ) => Promise<{ ok: boolean; message: string }>;
+  /** 여러 회차를 한 번에 추가한다 (미러에서 받아온 경우). */
+  addDraws: (
+    draws: Array<{ round: number; numbers: number[]; bonus: number | null }>,
+    sourceLabel: string,
+  ) => Promise<{ ok: boolean; message: string }>;
   /** 여러 게임을 A~E 칸에 한 번에 저장. 같은 칸을 지정하면 교체된다. */
   saveToSlots: (
     assignments: Array<{ index: number; numbers: number[]; mode: string }>,
@@ -257,6 +262,45 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  /** 여러 회차를 한 번에 붙인다. 기존 회차는 건드리지 않는다. */
+  const addDraws = useCallback(
+    async (
+      draws: Array<{ round: number; numbers: number[]; bonus: number | null }>,
+      sourceLabel: string,
+    ) => {
+      if (!data) return { ok: false, message: "데이터가 아직 준비되지 않았습니다." };
+      const fresh = draws.filter((d) => !data.draws.has(d.round));
+      if (fresh.length === 0) return { ok: false, message: "추가할 새 회차가 없습니다." };
+
+      const rows = serializeLottoData(data);
+      for (const d of fresh) {
+        const sorted = [...d.numbers].sort((a, b) => a - b);
+        rows.push(d.bonus === null ? [d.round, ...sorted] : [d.round, ...sorted, d.bonus]);
+      }
+      rows.sort((a, b) => a[0] - b[0]);
+
+      const next = buildLottoData(rows, sourceLabel);
+      const savedAt = new Date().toISOString();
+      const latest = next.rounds[next.rounds.length - 1];
+      await saveDataset({
+        rows,
+        source: next.source,
+        savedAt,
+        latest,
+        count: next.rounds.length,
+      });
+      setData(next);
+      setUsingSeed(false);
+      setDataSavedAt(savedAt);
+      setGames([]);
+      return {
+        ok: true,
+        message: `${fresh.length}개 회차를 추가했습니다. 이제 ${latest}회 기준입니다.`,
+      };
+    },
+    [data],
+  );
+
   const addDraw = useCallback(
     async (round: number, numbers: number[], bonus: number | null) => {
       if (!data) return { ok: false, message: "데이터가 아직 준비되지 않았습니다." };
@@ -364,6 +408,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     updateFromFile,
     resetToSeed,
     addDraw,
+    addDraws,
     saveToSlots,
     clearSlot,
     clearTicket,
