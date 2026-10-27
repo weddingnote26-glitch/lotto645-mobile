@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import { generateGames, lockedNumbers } from "../core/combinationGenerator";
 import { parityLabel, parityTargets } from "../core/parityAnalyzer";
 import { combinationPattern } from "../core/patternAnalyzer";
+import { KIND_LABEL } from "../core/groupAnalyzer";
 import { SLOT_COUNT, type GenMethod, type Settings } from "../storage/db";
 import { useAppState } from "../state/AppState";
 import type { TabKey } from "../types/nav";
@@ -70,6 +71,9 @@ export function Generator({
     ranked,
     bands,
     parity,
+    columns,
+    endRound,
+    pairAlert,
     settings,
     updateSettings,
     setFixedNumbers,
@@ -159,6 +163,28 @@ export function Generator({
       : method === "manual"
         ? { selected: manual, onToggle: onToggleManual }
         : undefined;
+
+  // 수열 분석에서 바로 담을 수 있는 묶음들 (반자동 번호판용)
+  const seqPicks: Array<{ label: string; numbers: number[] }> = [];
+  if (columns) {
+    const top = columns.byOverdue[0];
+    seqPicks.push({
+      label: `${KIND_LABEL.column} ${top.label} (${top.gap}회 미출)`,
+      numbers: top.members,
+    });
+  }
+  if (endRound && endRound.candidates.length > 0) {
+    seqPicks.push({
+      label: `${endRound.digit}끝회차 최강수 후보`,
+      numbers: endRound.candidates.map((c) => c.number),
+    });
+  }
+  if (pairAlert) {
+    seqPicks.push({
+      label: `쌍동끝 예상수 (${pairAlert.round}회 발생)`,
+      numbers: pairAlert.pool,
+    });
+  }
 
   // 최근 5·10회 홀짝 분포로 게임별 목표 홀수 개수를 정한다.
   const targets = usesParity && parity ? parityTargets(parity, settings.gameCount) : [];
@@ -427,6 +453,29 @@ export function Generator({
           {/* ---------- 반자동 ---------- */}
           {method === "semi" ? (
             <>
+              {seqPicks.length > 0 ? (
+                <div className="seqpick">
+                  <span className="field__label">수열 분석에서 담기</span>
+                  {seqPicks.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      className="btn seqpick__btn"
+                      onClick={() => {
+                        setFixedNumbers(p.numbers.slice(0, 6));
+                        onToast(`${p.label} ${p.numbers.slice(0, 6).join(", ")} 담았습니다.`);
+                      }}
+                    >
+                      <span>{p.label}</span>
+                      <span className="faint nums">{p.numbers.slice(0, 6).join(" · ")}</span>
+                    </button>
+                  ))}
+                  <span className="faint">
+                    통계 탭 → 수열에서 근거를 볼 수 있습니다. 담은 뒤 번호판에서 고쳐도 됩니다.
+                  </span>
+                </div>
+              ) : null}
+
               <NumberPad
                 selected={fixed}
                 onToggle={onToggleFixed}

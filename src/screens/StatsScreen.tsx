@@ -5,11 +5,12 @@ import { useMemo, useState } from "react";
 
 import { Ball } from "../components/Ball";
 import { PatternPanel } from "../components/PatternPanel";
+import { SequencePanel } from "../components/SequencePanel";
 import { Zone15Bars, Zone10Bars, OddEvenSplit } from "../components/WindowSummary";
 import { ZONE10_LABELS, ZONE15_LABELS } from "../core/analyzer";
 import { useAppState } from "../state/AppState";
 
-type View = "numbers" | "patterns";
+type View = "numbers" | "patterns" | "sequence";
 type SortKey = "number" | "cnt5" | "cnt10" | "cntTotal" | "gap";
 
 const SORTS: Array<{ key: SortKey; label: string }> = [
@@ -53,8 +54,25 @@ export function StatsScreen() {
       >
         조합 패턴
       </button>
+      <button
+        type="button"
+        className="segment__btn"
+        aria-pressed={view === "sequence"}
+        onClick={() => setView("sequence")}
+      >
+        수열
+      </button>
     </div>
   );
+
+  if (view === "sequence") {
+    return (
+      <div className="screen">
+        {switcher}
+        <SequencePanel />
+      </div>
+    );
+  }
 
   if (view === "patterns") {
     return (

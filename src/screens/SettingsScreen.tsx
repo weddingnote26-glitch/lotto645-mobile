@@ -4,6 +4,7 @@
 import { useRef, useState } from "react";
 
 import { useAppState } from "../state/AppState";
+import { ANALYSIS_FROM_OPTIONS } from "../storage/db";
 import { SEED_LATEST_ROUND, SEED_ROUND_COUNT } from "../data/seedDraws";
 
 function formatDate(iso: string | null): string {
@@ -15,7 +16,7 @@ function formatDate(iso: string | null): string {
 }
 
 export function SettingsScreen({ onToast }: { onToast: (msg: string) => void }) {
-  const { data, analysis, usingSeed, dataSavedAt, warnings, dismissWarnings, updateFromFile, resetToSeed } =
+  const { data, analysis, usingSeed, dataSavedAt, warnings, dismissWarnings, updateFromFile, resetToSeed, settings, updateSettings } =
     useAppState();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -127,6 +128,39 @@ export function SettingsScreen({ onToast }: { onToast: (msg: string) => void }) 
           </div>
         </section>
       ) : null}
+
+      <section className="card">
+        <h2 className="card__title" style={{ marginBottom: 4 }}>
+          수열 분석 범위
+        </h2>
+        <p className="card__sub" style={{ marginBottom: 10 }}>
+          세로줄 · 끝수 · 9궁도 · 끝회차 분석을 몇 회차부터 집계할지 정합니다.
+        </p>
+        <div className="segment" role="group" aria-label="분석 시작 회차">
+          {ANALYSIS_FROM_OPTIONS.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              className="segment__btn"
+              aria-pressed={settings.analysisFrom === o.value}
+              onClick={() => updateSettings({ analysisFrom: o.value })}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+        <p className="faint" style={{ marginTop: 8, marginBottom: 0 }}>
+          {ANALYSIS_FROM_OPTIONS.find((o) => o.value === settings.analysisFrom)?.help}{" "}
+          {settings.analysisFrom === 262
+            ? `1~261회 ${data.rounds.filter((r) => r < 262).length}개 회차를 빼고 봅니다.`
+            : ""}
+        </p>
+        <div className="notice notice--info" style={{ marginTop: 10 }}>
+          참고로 1~261회와 262회 이후의 번호 분포를 비교해 보면 통계적으로 차이가 없었습니다
+          (동질성 카이제곱 27.9, 임계 60.5). 표본이 많을수록 수치가 안정되므로 전체 회차를
+          권합니다.
+        </div>
+      </section>
 
       <section className="card">
         <h2 className="card__title" style={{ marginBottom: 8 }}>

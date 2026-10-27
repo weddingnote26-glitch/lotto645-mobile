@@ -192,7 +192,18 @@ export interface Settings {
   fixedNumbers: number[];
   /** 자동 생성에도 고정번호를 적용할지 */
   useFixed: boolean;
+  /**
+   * 수열 분석(세로줄·끝수·9궁도·끝회차)을 몇 회차부터 집계할지.
+   * 262 = 추첨 운영이 바뀐 시점부터만 보기, 1 = 전체 회차.
+   */
+  analysisFrom: number;
 }
+
+/** 분석 시작 회차 선택지 */
+export const ANALYSIS_FROM_OPTIONS = [
+  { value: 1, label: "전체 회차", help: "표본이 가장 많아 수치가 안정적입니다." },
+  { value: 262, label: "262회~", help: "추첨 운영이 바뀐 뒤만 봅니다." },
+] as const;
 
 export const DEFAULT_SETTINGS: Settings = {
   mode: "B",
@@ -201,6 +212,7 @@ export const DEFAULT_SETTINGS: Settings = {
   genMethod: "auto",
   fixedNumbers: [],
   useFixed: true,
+  analysisFrom: 262,
 };
 
 /** 저장된 값이 낡았거나 손상돼도 항상 쓸 수 있는 형태로 맞춘다. */
@@ -221,6 +233,9 @@ export function loadSettings(): Settings {
       merged.genMethod === "semi" || merged.genMethod === "manual" ? merged.genMethod : "auto",
     fixedNumbers: fixed,
     useFixed: merged.useFixed !== false,
+    analysisFrom: ANALYSIS_FROM_OPTIONS.some((o) => o.value === merged.analysisFrom)
+      ? merged.analysisFrom
+      : 262,
   };
 }
 

@@ -24,6 +24,17 @@ import {
 } from "../core/numberSelector";
 import { analyzeParity, type ParityProfile } from "../core/parityAnalyzer";
 import {
+  analyzeGroups,
+  detectPairAlert,
+  type GroupAnalysis,
+  type PairAlert,
+} from "../core/groupAnalyzer";
+import {
+  analyzeEndRound,
+  nextEndDigit,
+  type EndRoundAnalysis,
+} from "../core/endRoundAnalyzer";
+import {
   analyzePatterns,
   patternBands,
   type PatternBands,
@@ -72,6 +83,16 @@ interface AppStateValue {
   bands: PatternBands | null;
   /** 최근 5·10회 홀짝 분포 (생성 시 목표 홀짝의 근거) */
   parity: ParityProfile | null;
+  /** 마킹지 세로줄 3출 분석 */
+  columns: GroupAnalysis | null;
+  /** 끝수(1의 자리) 동끝 분석 */
+  digits: GroupAnalysis | null;
+  /** 9궁도 동궁 분석 */
+  palaces: GroupAnalysis | null;
+  /** 다음 회차 끝자리 기준 끝회차 최강수 분석 */
+  endRound: EndRoundAnalysis | null;
+  /** 최근 3회차 안의 쌍동끝 알림 (없으면 null) */
+  pairAlert: PairAlert | null;
   /** 내 번호 A~E 5칸 (비어 있으면 null) */
   ticket: MyTicket;
   /** 방금 생성한 게임들. 탭을 옮겨도 유지되도록 여기에 둔다. */
@@ -149,6 +170,26 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   // 최근 5·10회의 실제 홀짝 분포. 데이터가 바뀌면 함께 다시 계산된다.
   const parity = useMemo(() => (analysis ? analyzeParity(analysis) : null), [analysis]);
+
+  // 수열 분석 — 분석 시작 회차 설정을 함께 따른다.
+  const from = settings.analysisFrom;
+  const columns = useMemo(
+    () => (data ? analyzeGroups(data, "column", 3, from) : null),
+    [data, from],
+  );
+  const digits = useMemo(() => (data ? analyzeGroups(data, "digit", 2, from) : null), [data, from]);
+  const palaces = useMemo(
+    () => (data ? analyzeGroups(data, "palace", 2, from) : null),
+    [data, from],
+  );
+  const endRound = useMemo(
+    () => (data && analysis ? analyzeEndRound(data, nextEndDigit(analysis.latest), from) : null),
+    [data, analysis, from],
+  );
+  const pairAlert = useMemo(
+    () => (data ? detectPairAlert(data, "digit", 3, from) : null),
+    [data, from],
+  );
 
   const setGeneratedGames = useCallback((numbers: number[][], mode: string) => {
     setGames(numbers.map((n) => ({ numbers: n, mode })));
@@ -270,6 +311,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     patterns,
     bands,
     parity,
+    columns,
+    digits,
+    palaces,
+    endRound,
+    pairAlert,
     ticket,
     games,
     setGeneratedGames,
